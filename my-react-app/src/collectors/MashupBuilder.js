@@ -126,6 +126,7 @@ export default function MashupBuilder({
             key={(layer?.image_name || 'layer') + ':' + i}
             url={layer?.image_path}
             alt={layer?.image_name || `Layer ${i + 1}`}
+            makeCandidates={makeCandidates}
           />
         ))}
       </div>
@@ -139,7 +140,7 @@ export default function MashupBuilder({
   );
 }
 
-function LayerPreview({ url, alt }) {
+function LayerPreview({ url, alt, makeCandidates }) {
   const [idx, setIdx] = useState(0);
   const [list, setList] = useState(() => makeCandidates(url));
   useEffect(() => { setList(makeCandidates(url)); setIdx(0); }, [url]);
