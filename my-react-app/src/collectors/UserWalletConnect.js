@@ -78,34 +78,29 @@ export default function UserWalletConnect({ desiredChainId = POLYGON.chainId, on
         await eth.request({ method: 'wallet_addEthereumChain', params: [{ ...POLYGON }] });
         await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: desiredChainId }] });
       } else {
-        throw e;
+        setError(e?.message || String(e));
       }
     }
   };
 
   const connect = async () => {
     if (!hasProvider) {
-      setError('No injected wallet found. Install MetaMask or a compatible wallet.');
+      setError('No Ethereum provider found (install MetaMask).');
       return;
     }
-    const eth = window.ethereum;
-    setError('');
     setConnecting(true);
+    setError('');
     try {
+      const eth = window.ethereum;
       const accounts = await eth.request({ method: 'eth_requestAccounts' });
-      const acc = accounts?.[0] || '';
+      const acc = Array.isArray(accounts) && accounts.length ? accounts[0] : '';
       setAddress(acc);
       const cid = await eth.request({ method: 'eth_chainId' });
       setChainId(cid);
-      if (toChainIdString(cid) !== toChainIdString(desiredChainId)) {
-        await switchToDesired();
-      }
-      const finalCid = await eth.request({ method: 'eth_chainId' });
-      setChainId(finalCid);
-      const ok = toChainIdString(finalCid) === toChainIdString(desiredChainId);
-      if (onConnected && acc) onConnected({ address: acc, chainId: finalCid, isCorrectNetwork: ok, provider: eth });
+      const ok = toChainIdString(cid) === toChainIdString(desiredChainId);
+      if (onConnected) onConnected({ address: acc, chainId: cid, isCorrectNetwork: ok, provider: eth });
+      if (!ok) await switchToDesired();
     } catch (e) {
-      // Common error codes: 4001 user rejected, 4902 unknown chain
       setError(e?.message || String(e));
     } finally {
       setConnecting(false);
@@ -113,24 +108,15 @@ export default function UserWalletConnect({ desiredChainId = POLYGON.chainId, on
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      {!hasProvider && (
-        <a href="https://metamask.io" target="_blank" rel="noreferrer">Install MetaMask</a>
+    <div>
+      <button onClick={connect} disabled={connecting}>
+        {connecting ? 'Connecting…' : (address ? 'Connected: ' + short(address) : 'Connect Wallet')}
+      </button>
+      {!isCorrectNetwork && address && (
+        <button style={{ marginLeft: 8 }} onClick={switchToDesired}>Switch to Polygon</button>
       )}
-      {hasProvider && !address && (
-        <button onClick={connect} disabled={connecting}>{connecting ? 'Connecting…' : 'Connect Wallet'}</button>
-      )}
-      {hasProvider && address && (
-        <>
-          <span>Connected: <span style={{ fontFamily: 'monospace' }}>{address}</span></span>
-          {!isCorrectNetwork ? (
-            <button onClick={switchToDesired}>Switch to Polygon</button>
-          ) : (
-            <span style={{ color: '#2a7' }}>Polygon</span>
-          )}
-        </>
-      )}
-      {error && <span style={{ color: 'crimson' }}>{error}</span>}
+      {error && <div style={{ color: 'crimson', marginTop: 8 }}>Error: {error}</div>}
     </div>
   );
 }
+

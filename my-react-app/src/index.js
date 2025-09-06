@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import NFTGallery from './NFTGallery';
-import MashupBuilder from './MashupBuilder';
-import AssetCarousel from './AssetCarousel';
-import UserWalletConnect from './UserWalletConnect';
-import FirestoreArtistContract from './FirestoreArtistContract';
+import NFTGallery from './collectors/NFTGallery';
+import MashupBuilder from './collectors/MashupBuilder';
+import AssetCarousel from './collectors/AssetCarousel';
+import UserWalletConnect from './collectors/UserWalletConnect';
+import FirestoreArtistContract from './collectors/FirestoreArtistContract';
 
 function AppShell() {
   const [wallet, setWallet] = useState({ address: '', chainId: '', provider: null, isCorrectNetwork: false });

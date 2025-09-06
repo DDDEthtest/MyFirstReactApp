@@ -117,3 +117,4 @@ export default class NFTLoader {
     return rec?.attributes || {};
   }
 }
+

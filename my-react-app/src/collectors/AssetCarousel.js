@@ -59,7 +59,7 @@ export default function AssetCarousel({ assets = [], onToggleAsset, activeAssetP
                       cursor: 'pointer',
                     }}
                   >
-                    ▲
+                    ↑
                   </button>
                   <button
                     type="button"
@@ -75,7 +75,7 @@ export default function AssetCarousel({ assets = [], onToggleAsset, activeAssetP
                       cursor: 'pointer',
                     }}
                   >
-                    ▼
+                    ↓
                   </button>
                 </div>
               )}
@@ -90,3 +90,4 @@ export default function AssetCarousel({ assets = [], onToggleAsset, activeAssetP
     </div>
   );
 }
+

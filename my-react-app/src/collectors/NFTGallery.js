@@ -154,6 +154,5 @@ function NFTGallery({ contract = DEFAULT_CONTRACT, onToggleAsset, activeAssetPat
   );
 }
 
-// AssetImage moved to its own file
-
 export default NFTGallery;
+

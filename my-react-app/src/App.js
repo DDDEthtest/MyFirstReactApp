@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import LoadMultiAssetNFT, { LoadTokenAssetsERC5773, LoadTokenChildrenERC7401 } from './component';
+import LoadMultiAssetNFT, { LoadTokenAssetsERC5773, LoadTokenChildrenERC7401 } from './collectors/component';
 
 // Start with the previously shared contract; you can switch by clicking a card below.
 const DEFAULT_CONTRACT = '0x2499809520bb9A8847a82Fb51126c3483eE87d14';
