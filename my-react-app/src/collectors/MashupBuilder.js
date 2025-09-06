@@ -31,10 +31,12 @@ export default function MashupBuilder({
 
   // Build candidate URLs for a possibly-ipfs src
   const gateways = [
+    // Prefer nftstorage first; tends to allow hotlinking reliably from Hosting
+    'https://nftstorage.link/ipfs/',
     'https://cloudflare-ipfs.com/ipfs/',
-    'https://ipfs.io/ipfs/',
     'https://dweb.link/ipfs/',
     'https://gateway.pinata.cloud/ipfs/',
+    'https://ipfs.io/ipfs/', // keep ipfs.io last due to throttling
   ];
   const makeCandidates = (u) => {
     if (!u) return [];
@@ -147,7 +149,7 @@ function LayerPreview({ url, alt, makeCandidates }) {
 
   const current = list[idx] || url;
   if (!current) return null;
-  const onError = () => setIdx((i) => Math.min(i + 1, list.length));
+  const onError = () => setIdx((i) => Math.min(i + 1, Math.max(0, list.length - 1)));
 
   // If we run out of candidates, render nothing to avoid broken icon overlay
   if (idx >= list.length) return null;
