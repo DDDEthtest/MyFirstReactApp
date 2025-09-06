@@ -155,7 +155,7 @@ function LayerPreview({ url, alt }) {
     <img
       src={current}
       alt={alt}
-      crossOrigin="anonymous"
+      referrerPolicy="no-referrer"
       onError={onError}
       style={{
         position: 'absolute',
