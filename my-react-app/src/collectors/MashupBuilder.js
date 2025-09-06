@@ -120,22 +120,12 @@ export default function MashupBuilder({
     }}>
       {/* Canvas preview */}
       <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 10 }}>
-        {/* We draw via <img> layering for preview; export uses canvas for correctness */}
+        {/* We draw via layered previews with gateway fallbacks; export uses canvas for correctness */}
         {enabledLayers.map((layer, i) => (
-          <img
+          <LayerPreview
             key={(layer?.image_name || 'layer') + ':' + i}
-            src={makeCandidates(layer?.image_path)[0]}
+            url={layer?.image_path}
             alt={layer?.image_name || `Layer ${i + 1}`}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'fill',
-              imageRendering: 'auto',
-              mixBlendMode: 'normal',
-            }}
           />
         ))}
       </div>
@@ -146,6 +136,38 @@ export default function MashupBuilder({
         </button>
       </div>
     </div>
+  );
+}
+
+function LayerPreview({ url, alt }) {
+  const [idx, setIdx] = useState(0);
+  const [list, setList] = useState(() => makeCandidates(url));
+  useEffect(() => { setList(makeCandidates(url)); setIdx(0); }, [url]);
+
+  const current = list[idx] || url;
+  if (!current) return null;
+  const onError = () => setIdx((i) => Math.min(i + 1, list.length));
+
+  // If we run out of candidates, render nothing to avoid broken icon overlay
+  if (idx >= list.length) return null;
+
+  return (
+    <img
+      src={current}
+      alt={alt}
+      crossOrigin="anonymous"
+      onError={onError}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'fill',
+        imageRendering: 'auto',
+        mixBlendMode: 'normal',
+      }}
+    />
   );
 }
 
@@ -165,4 +187,3 @@ function downloadDataUrl(dataUrl, filename) {
   a.download = filename || 'download.png';
   a.click();
 }
-
