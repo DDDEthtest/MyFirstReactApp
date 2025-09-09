@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // TEMPORARY: allow public reads of artist allowlist docs for debugging.
+    // IMPORTANT: tighten before shipping to production.
+    match /artists/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
+
