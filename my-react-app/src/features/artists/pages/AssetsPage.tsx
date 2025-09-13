@@ -119,6 +119,14 @@ const AssetsPage: React.FC = () => {
       const marketplaceAddr = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
       if (!collectionAddr || !marketplaceAddr) throw new Error('Missing REACT_APP_COLLECTION_ADDRESS or MARKETPLACE_ADDRESS');
 
+      // Sanity: ensure addresses point to real contracts on this network
+      const net = await provider.getNetwork();
+      const codeC = await provider.getCode(collectionAddr);
+      const codeM = await provider.getCode(marketplaceAddr);
+      if (codeC === '0x' || codeM === '0x') {
+        throw new Error(`Configured addresses not contracts on chain ${net.chainId}.\nCollection=${collectionAddr} code=${codeC}\nMarketplace=${marketplaceAddr} code=${codeM}`);
+      }
+
       const collection = new Contract(collectionAddr, COLLECTION_ABI, signer);
       const marketplace = new Contract(marketplaceAddr, MARKETPLACE_ABI, signer);
 
@@ -151,6 +159,16 @@ const AssetsPage: React.FC = () => {
 
       // Register the asset if not yet
       const exists: boolean = await collection.assetExists(assetId);
+      // Optional: verify role to surface clearer error messages in production
+      if (!exists) {
+        try {
+          const role = await collection.ASSET_MANAGER_ROLE();
+          const hasRole = await collection.hasRole?.(role, myAddr).catch(() => undefined);
+          if (hasRole === false) {
+            throw new Error('Wallet lacks ASSET_MANAGER_ROLE on collection');
+          }
+        } catch (_) { /* ignore if contract doesn\'t expose hasRole in ABI */ }
+      }
       if (!exists) {
         await (await collection.registerAsset(assetId, tokenURI)).wait();
       }
