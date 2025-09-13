@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
 import { buyOne } from '../services/marketplaceClient';
@@ -103,4 +103,3 @@ const ExplorePage: React.FC = () => {
 };
 
 export default ExplorePage;
-

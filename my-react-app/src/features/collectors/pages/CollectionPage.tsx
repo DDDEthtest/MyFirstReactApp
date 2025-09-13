@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useWallet } from '../../../shared/hooks/useWallet';
 import MashupBuilder from '../../../collectors/MashupBuilder';
 

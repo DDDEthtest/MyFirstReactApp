@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 
 // MashupBuilder
 // Renders multiple transparent PNG layers on top of each other to form a composition.
@@ -10,6 +10,8 @@ import React, { useEffect, useState } from 'react';
 // Notes:
 // - Each layer is drawn as an <img> occupying the full canvas, absolutely positioned.
 // - Uses multi-gateway image fallback for IPFS/HTTP reliability.
+ 
+
 export default function MashupBuilder({
   layers = [],
   // Display size defaults: width 552, height 736 (as requested)
@@ -35,7 +37,7 @@ export default function MashupBuilder({
 
   // Build candidate URLs for a possibly-ipfs src
   const primary = (process.env.REACT_APP_IPFS_PRIMARY_GATEWAY || '').trim();
-  const gateways = [
+  const gateways = useMemo(() => ([
     // Prefer Filebase first since your assets are pinned there
     'https://ipfs.filebase.io/ipfs/',
     // Optional override via env
@@ -45,8 +47,8 @@ export default function MashupBuilder({
     'https://dweb.link/ipfs/',
     'https://gateway.pinata.cloud/ipfs/',
     'https://ipfs.io/ipfs/', // keep ipfs.io last due to throttling
-  ];
-  const makeCandidates = (u) => {
+  ]), [primary]);
+  const makeCandidates = useCallback((u) => {
     if (!u) return [];
     const list = [];
     const isHttp = /^https?:\/\//i.test(u);
@@ -71,7 +73,7 @@ export default function MashupBuilder({
     list.push(u);
     if (/^http:\/\//i.test(u)) list.push(u.replace(/^http:\/\//i, 'https://'));
     return Array.from(new Set(list));
-  };
+  }, [gateways]);
 
   const drawExact = (ctx, img, W, H) => {
     ctx.drawImage(img, 0, 0, W, H);
@@ -186,7 +188,7 @@ export default function MashupBuilder({
 function LayerPreview({ url, alt, makeCandidates, mode = 'background', target }) {
   const [idx, setIdx] = useState(0);
   const [list, setList] = useState(() => makeCandidates(url));
-  useEffect(() => { setList(makeCandidates(url)); setIdx(0); }, [url]);
+  useEffect(() => { setList(makeCandidates(url)); setIdx(0); }, [url, makeCandidates]);
 
   const current = list[idx] || url;
   if (!current) return null;
