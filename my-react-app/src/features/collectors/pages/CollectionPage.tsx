@@ -100,8 +100,10 @@ export default function CollectionPage() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const collectionAddr = String(process.env.REACT_APP_COLLECTION_ADDRESS || '');
-  // Local editable layers with toggleable `enabled`
-  const [layers, setLayers] = useState<AssetLayer[]>([]);
+  // Mashup layers persist across NFT selection
+  const [mashLayers, setMashLayers] = useState<AssetLayer[]>([]);
+  // Candidate layers for the currently selected NFT (refreshes on selection)
+  const [candidates, setCandidates] = useState<AssetLayer[]>([]);
   // Mashup display size = 70% of 552x736
   const MASHUP_BASE = { w: 552, h: 736 } as const;
   const MASHUP_SCALE = 0.7;
@@ -125,7 +127,7 @@ export default function CollectionPage() {
 
   const selected = owned[Math.min(selectedIdx, Math.max(0, owned.length - 1))];
 
-  // Rebuild layers when a different NFT is selected. Do NOT enable by default.
+  // Rebuild candidate layers when a different NFT is selected. Do NOT enable by default.
   useEffect(() => {
     const meta = selected?.metadata;
     const assets = Array.isArray(meta?.assets) ? meta.assets : [];
@@ -144,11 +146,20 @@ export default function CollectionPage() {
       const u = selected?.image || meta?.image;
       next.push({ image_name: 'composite', image_path: ipfsToHttp(u), enabled: false });
     }
-    setLayers(next);
+    setCandidates(next);
   }, [selected]);
 
   const toggleLayer = (name: string) => {
-    setLayers((arr) => arr.map((l) => (l.image_name === name ? { ...l, enabled: !l.enabled } : l)));
+    // Toggling works against the current candidate set: add/remove from mashLayers
+    const cand = candidates.find((c) => c.image_name === name);
+    if (!cand) return;
+    setMashLayers((arr) => {
+      const exists = arr.find((l) => l.image_path === cand.image_path);
+      if (exists) {
+        return arr.map((l) => (l.image_path === cand.image_path ? { ...l, enabled: !l.enabled } : l));
+      }
+      return arr.concat([{ ...cand, enabled: true }]);
+    });
   };
 
   if (!connected) {
@@ -185,27 +196,29 @@ export default function CollectionPage() {
       {/* Middle: Assets for selected NFT */}
       <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff', height: mashupH, overflowY: 'auto' }}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Assets</div>
-        {layers.map((l, i) => (
+        {candidates.map((l, i) => {
+          const active = mashLayers.some((ml) => ml.image_path === l.image_path && ml.enabled);
+          return (
           <div
             key={l.image_name + ':' + i}
             onClick={() => toggleLayer(l.image_name)}
             style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start', padding: '10px 0', borderTop: '1px solid #f3f4f6', cursor: 'pointer' }}
             title={l.enabled ? 'Click to hide from mashup' : 'Click to add to mashup'}
           >
-            <div style={{ fontWeight: 600, color: l.enabled ? '#065f46' : '#111827' }}>{l.image_name}</div>
+            <div style={{ fontWeight: 600, color: active ? '#065f46' : '#111827' }}>{l.image_name}</div>
             <MultiGatewayImg
               uri={l.image_path}
               alt={l.image_name}
-              style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 6, border: l.enabled ? '2px solid #10b981' : '1px solid #e5e7eb' }}
+              style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 6, border: active ? '2px solid #10b981' : '1px solid #e5e7eb' }}
             />
           </div>
-        ))}
-        {layers.length === 0 && (<div>No asset layers found in metadata.</div>)}
+        );})}
+        {candidates.length === 0 && (<div>No asset layers found in metadata.</div>)}
       </div>
 
       {/* Right: Mashup preview */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
-        <MashupBuilder layers={layers} width={mashupW} height={mashupH} background="#ffffff" style={{}} />
+        <MashupBuilder layers={mashLayers} width={mashupW} height={mashupH} background="#ffffff" style={{}} />
       </div>
     </div>
   );
