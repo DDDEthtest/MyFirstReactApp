@@ -25,6 +25,18 @@ jobs:
           cache: npm
           cache-dependency-path: my-react-app/package-lock.json
 
+      - name: Create CRA production env
+        run: |
+          mkdir -p my-react-app
+          echo "REACT_APP_FILEBASE_RPC_TOKEN=${{ secrets.FILEBASE_RPC_TOKEN }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_ALCHEMY_API_KEY=${{ secrets.REACT_APP_ALCHEMY_API_KEY }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_CHAIN_ID=${{ secrets.REACT_APP_CHAIN_ID }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_NETWORK_NAME=${{ secrets.REACT_APP_NETWORK_NAME }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_COLLECTION_ADDRESS=${{ secrets.REACT_APP_COLLECTION_ADDRESS }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_MARKETPLACE_ADDRESS=${{ secrets.REACT_APP_MARKETPLACE_ADDRESS }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_BLOCK_EXPLORER=${{ secrets.REACT_APP_BLOCK_EXPLORER }}" >> my-react-app/.env.production.local
+          echo "REACT_APP_IPFS_PRIMARY_GATEWAY=${{ secrets.REACT_APP_IPFS_PRIMARY_GATEWAY }}" >> my-react-app/.env.production.local
+
       - name: Install dependencies
         working-directory: my-react-app
         run: npm ci
@@ -56,5 +68,6 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
           channelId: live
           entryPoint: .
