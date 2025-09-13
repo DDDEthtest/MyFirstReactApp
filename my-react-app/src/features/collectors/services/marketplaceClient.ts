@@ -8,7 +8,7 @@ const MARKETPLACE_ABI = [
 export async function getSignerAndContracts() {
   const eth = (window as any)?.ethereum;
   if (!eth?.request) throw new Error('No wallet provider found');
-  const provider = new BrowserProvider(eth);
+  let provider = new BrowserProvider(eth);
   // Ensure correct chain before proceeding
   const targetId = Number(process.env.REACT_APP_CHAIN_ID || '137');
   const targetHex = '0x' + targetId.toString(16);
@@ -32,6 +32,8 @@ export async function getSignerAndContracts() {
         throw e;
       }
     }
+    await new Promise((r) => setTimeout(r, 300));
+    provider = new BrowserProvider(eth);
     net = await provider.getNetwork();
   }
   const signer = await provider.getSigner();

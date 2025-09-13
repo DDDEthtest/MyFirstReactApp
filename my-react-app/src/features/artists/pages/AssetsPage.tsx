@@ -111,9 +111,7 @@ const AssetsPage: React.FC = () => {
       // Provider/signer
       const eth = (window as any)?.ethereum;
       if (!eth?.request) throw new Error('No wallet provider found');
-      const provider = new BrowserProvider(eth);
-      const signer = await provider.getSigner();
-      const myAddr = await signer.getAddress();
+      let provider = new BrowserProvider(eth);
 
       const collectionAddr = String(process.env.REACT_APP_COLLECTION_ADDRESS || '');
       const marketplaceAddr = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
@@ -142,9 +140,14 @@ const AssetsPage: React.FC = () => {
             throw switchErr;
           }
         }
+        // Recreate provider/signer after switch to avoid network changed errors
+        await new Promise((r) => setTimeout(r, 300));
+        provider = new BrowserProvider(eth);
         net = await provider.getNetwork();
       }
 
+      const signer = await provider.getSigner();
+      const myAddr = await signer.getAddress();
       // Sanity: ensure addresses point to real contracts on this network
       net = await provider.getNetwork();
       const codeC = await provider.getCode(collectionAddr);
