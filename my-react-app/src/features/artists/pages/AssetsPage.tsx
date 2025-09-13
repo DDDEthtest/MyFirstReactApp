@@ -146,7 +146,7 @@ const AssetsPage: React.FC = () => {
       }
 
       // Sanity: ensure addresses point to real contracts on this network
-      const net = await provider.getNetwork();
+      net = await provider.getNetwork();
       const codeC = await provider.getCode(collectionAddr);
       const codeM = await provider.getCode(marketplaceAddr);
       if (codeC === '0x' || codeM === '0x') {
