@@ -7,10 +7,17 @@ import { MultiAssetMetadata } from '../services/metadata';
 import { ipfsClient } from '../services/ipfsClient';
 import MultiAssetUploader, { AssetFileMap } from '../components/MultiAssetUploader';
 import UploadStatus, { UploadItem } from '../components/UploadStatus';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../../shared/lib/firebase';
+import { useArtistProfile } from '../hooks/useArtistProfile';
+import { ROUTES } from '../../../shared/lib/constants';
+import { useNavigate } from 'react-router-dom';
 
 const CreateNftPage: React.FC = () => {
   const { address } = useWallet();
   const { mint } = useCreateMultiAssetNft();
+  const { profile } = useArtistProfile();
+  const navigate = useNavigate();
   const [details, setDetails] = useState<AssetFormValues>({ name: '' });
   const [preview, setPreview] = useState<MultiAssetMetadata | null>(null);
   const [assets, setAssets] = useState<AssetFileMap>({});
@@ -154,7 +161,29 @@ const CreateNftPage: React.FC = () => {
         to: address,
         metadata: { ...meta, external_url: tokenURI },
       });
-      alert('Uploaded to IPFS and mint simulated. Token URI: ' + tokenURI);
+
+      // 5) Register listing in Firestore
+      const byKey: Record<string, string> = {};
+      uploadEntries.forEach((e) => { byKey[e.key] = e.uri; });
+      await addDoc(collection(db, 'NFT-listings'), {
+        eyes: byKey['eyes'] || '',
+        head: byKey['head'] || '',
+        upper: byKey['upper'] || '',
+        bottom: byKey['bottom'] || '',
+        hat: byKey['hat'] || '',
+        left_accessory: byKey['left_accessory'] || '',
+        right_accessory: byKey['right_accessory'] || '',
+        background: byKey['background'] || '',
+        Composite: parentURI,
+        status: 'approved',
+        'artist-name': profile.displayName || '',
+        'artist-wallet': address || '',
+        'submission-date-time': serverTimestamp(),
+        tokenURI,
+      });
+
+      window.alert('NFT successfully registered for revision');
+      navigate(ROUTES.artistAssets);
     } catch (e: any) {
       console.error('Mint flow failed', e);
       setUploads((u) => u.concat([{ id: `error:${Date.now()}`, label: 'Upload error', stage: 'error', error: e?.message || String(e) }]));

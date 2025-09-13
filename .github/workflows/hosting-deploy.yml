@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -47,4 +48,3 @@ jobs:
           channelId: live
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
           entryPoint: ./
-

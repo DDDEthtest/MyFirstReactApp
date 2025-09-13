@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ArtistLayout from '../features/artists/ArtistLayout';
+import CollectorLayout from '../features/collectors/CollectorLayout';
 import { ROUTES } from '../shared/lib/constants';
 import { useWallet } from '../shared/hooks/useWallet';
 import { useArtistProfile } from '../features/artists/hooks/useArtistProfile';
@@ -8,7 +9,8 @@ import { useArtistProfile } from '../features/artists/hooks/useArtistProfile';
 const ArtistDashboard = lazy(() => import('../features/artists/pages/DashboardPage'));
 const ArtistCreate = lazy(() => import('../features/artists/pages/CreateNftPage'));
 const ArtistAssets = lazy(() => import('../features/artists/pages/AssetsPage'));
-const CollectorsApp = lazy(() => import('../collectors/AppShell'));
+const CollectorsExplore = lazy(() => import('../features/collectors/pages/ExplorePage'));
+const CollectorsCollection = lazy(() => import('../features/collectors/pages/CollectionPage'));
 
 const ArtistLanding: React.FC = () => {
   const { connected, address } = useWallet();
@@ -51,8 +53,13 @@ export const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <Routes>
-        {/* Collectors (existing) */}
-        <Route path={ROUTES.home} element={<CollectorsApp />} />
+        {/* Collectors */}
+        <Route path={ROUTES.collectors} element={<CollectorLayout />}>
+          <Route index element={<CollectorsExplore />} />
+          <Route path={ROUTES.collectorsCollection.replace(`${ROUTES.collectors}/`, '')} element={<CollectorsCollection />} />
+        </Route>
+        {/* Home redirects to collectors */}
+        <Route path={ROUTES.home} element={<Navigate to={ROUTES.collectors} replace />} />
 
         {/* Artist routes */}
         <Route path={ROUTES.artists} element={<ArtistLayout />}>
@@ -72,7 +79,7 @@ export const AppRoutes: React.FC = () => {
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+        <Route path="*" element={<Navigate to={ROUTES.collectors} replace />} />
       </Routes>
     </Suspense>
   );

@@ -1,5 +1,7 @@
 export const ROUTES = {
   home: '/',
+  collectors: '/collectors',
+  collectorsCollection: '/collectors/collection',
   artists: '/artists',
   artistDashboard: '/artists/dashboard',
   artistCreate: '/artists/create',
@@ -10,4 +12,3 @@ export const ROUTES = {
 export const ARTIST_ALLOWLIST: string[] = [
   "0x00f33fd847d48ac64f6f8f3ff577264da59fe882"
 ];
-

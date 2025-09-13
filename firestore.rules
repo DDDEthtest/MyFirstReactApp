@@ -7,6 +7,22 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // Dev rule for NFT listings created from the Create page.
+    // Allows anyone to create listings; disallows updates/deletes.
+    // Tighten this in production (e.g., require Firebase Auth/App Check or
+    // restrict by Cloud Functions).
+    match /NFT-listings/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll([
+        'eyes','head','upper','bottom','hat','left_accessory','right_accessory','background','Composite','status','artist-name','artist-wallet','submission-date-time','tokenURI'
+      ]);
+      // Allow a narrow update to mark a listing as 'listed' and attach on-chain metadata
+      // Dev-only: tighten for production (require Auth/App Check or Cloud Functions)
+      allow update: if resource.data.status == 'approved' &&
+                     request.resource.data.status == 'listed' &&
+                     request.resource.data['artist-wallet'] == resource.data['artist-wallet'];
+      allow delete: if false;
+    }
   }
 }
-

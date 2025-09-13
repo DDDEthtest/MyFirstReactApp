@@ -1,0 +1,53 @@
+import React from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { ROUTES } from '../../shared/lib/constants';
+import { WalletProvider } from '../../providers/WalletProvider';
+import { useWallet } from '../../shared/hooks/useWallet';
+
+const NavLink: React.FC<{ to: string; label: string }> = ({ to, label }) => {
+  const loc = useLocation();
+  const active = loc.pathname === to;
+  return (
+    <Link to={to} style={{ padding: '8px 12px', borderRadius: 6, textDecoration: 'none', color: active ? '#1f2937' : '#374151', background: active ? '#eef2ff' : 'transparent' }}>
+      {label}
+    </Link>
+  );
+};
+
+const WalletBadge: React.FC = () => {
+  const { connected, address, connect, disconnect } = useWallet();
+  return (
+    <div>
+      {connected ? (
+        <>
+          <span style={{ marginRight: 8 }}>{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+          <button className="btn secondary" onClick={disconnect}>Disconnect</button>
+        </>
+      ) : (
+        <button className="btn" onClick={connect}>Connect Wallet</button>
+      )}
+    </div>
+  );
+};
+
+const CollectorLayout: React.FC = () => {
+  return (
+    <WalletProvider>
+      <div>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Link to={ROUTES.collectors} style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>Collector Portal</Link>
+            <NavLink to={ROUTES.collectors} label="Explore" />
+            <NavLink to={ROUTES.collectorsCollection} label="Collection" />
+          </div>
+          <WalletBadge />
+        </header>
+        <main style={{ padding: 16 }}>
+          <Outlet />
+        </main>
+      </div>
+    </WalletProvider>
+  );
+};
+
+export default CollectorLayout;
