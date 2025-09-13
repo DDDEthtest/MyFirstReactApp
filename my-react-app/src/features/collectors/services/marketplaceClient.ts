@@ -9,6 +9,31 @@ export async function getSignerAndContracts() {
   const eth = (window as any)?.ethereum;
   if (!eth?.request) throw new Error('No wallet provider found');
   const provider = new BrowserProvider(eth);
+  // Ensure correct chain before proceeding
+  const targetId = Number(process.env.REACT_APP_CHAIN_ID || '137');
+  const targetHex = '0x' + targetId.toString(16);
+  let net = await provider.getNetwork();
+  if (Number(net.chainId) !== targetId) {
+    try {
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: targetHex }] });
+    } catch (e: any) {
+      if (e?.code === 4902) {
+        await eth.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: targetHex,
+            chainName: process.env.REACT_APP_NETWORK_NAME || 'Polygon',
+            rpcUrls: ['https://polygon-rpc.com'],
+            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+            blockExplorerUrls: [process.env.REACT_APP_BLOCK_EXPLORER || 'https://polygonscan.com']
+          }]
+        });
+      } else {
+        throw e;
+      }
+    }
+    net = await provider.getNetwork();
+  }
   const signer = await provider.getSigner();
   const marketplaceAddr = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
   if (!marketplaceAddr) throw new Error('Missing REACT_APP_MARKETPLACE_ADDRESS');
@@ -23,4 +48,3 @@ export async function buyOne(listingId: bigint, priceMatic: string, recipient?: 
   const tx = await marketplace.buy(listingId, 1n, to, { value });
   return tx.wait();
 }
-

@@ -119,6 +119,32 @@ const AssetsPage: React.FC = () => {
       const marketplaceAddr = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
       if (!collectionAddr || !marketplaceAddr) throw new Error('Missing REACT_APP_COLLECTION_ADDRESS or MARKETPLACE_ADDRESS');
 
+      // Ensure wallet is on the target chain (e.g., Polygon 137)
+      const targetId = Number(process.env.REACT_APP_CHAIN_ID || '137');
+      const targetHex = '0x' + targetId.toString(16);
+      let net = await provider.getNetwork();
+      if (Number(net.chainId) !== targetId) {
+        try {
+          await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: targetHex }] });
+        } catch (switchErr: any) {
+          if (switchErr?.code === 4902) {
+            await eth.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: targetHex,
+                chainName: process.env.REACT_APP_NETWORK_NAME || 'Polygon',
+                rpcUrls: ['https://polygon-rpc.com'],
+                nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+                blockExplorerUrls: [process.env.REACT_APP_BLOCK_EXPLORER || 'https://polygonscan.com']
+              }]
+            });
+          } else {
+            throw switchErr;
+          }
+        }
+        net = await provider.getNetwork();
+      }
+
       // Sanity: ensure addresses point to real contracts on this network
       const net = await provider.getNetwork();
       const codeC = await provider.getCode(collectionAddr);
