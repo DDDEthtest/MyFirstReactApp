@@ -129,9 +129,13 @@
 @media (min-width: 1024px) { .asset-card { flex-basis: 120px; } }
 
 /* Mobile font sizing adjustments */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .collectors-container { font-size: 16px; }
-  .nav-tab { font-size: 14px; }
+  .collectors-header a { font-size: 20px; }
+  .collectors-header .brand { font-size: 22px; }
+  .collectors-header .top-tab { font-size: 18px; }
+  .nav-tab { font-size: 20px; padding: 12px 16px; min-height: 44px; }
+  .collectors-header .btn, .collectors-header .btn.secondary { font-size: 18px; padding: 10px 14px; min-height: 40px; }
   .thumb-title { font-size: 14px; }
 }
 .collection-scroll { overflow-y: auto; }
