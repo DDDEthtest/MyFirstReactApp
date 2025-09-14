@@ -17,14 +17,38 @@ export const WalletProvider: React.FC<React.PropsWithChildren<{}>> = ({ children
   const connect = useCallback(async () => {
     try {
       setConnecting(true);
-      // Basic EIP-1193 connect flow; keeps it optional to avoid throwing on non-web3 environments
-      const eth = (window as any)?.ethereum;
-      if (eth?.request) {
-        const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+      // Prefer a real EIP-1193 provider; never fall back to a dummy address.
+      const eth = (window as any)?.ethereum as any;
+
+      // Some environments expose multiple providers (e.g., MetaMask + Coinbase)
+      const pickProvider = () => {
+        if (!eth) return null;
+        const list: any[] = Array.isArray(eth?.providers) ? eth.providers : [eth];
+        // Prefer MetaMask, then Coinbase Wallet, then the first provider
+        return (
+          list.find((p: any) => p?.isMetaMask) ||
+          list.find((p: any) => p?.isCoinbaseWallet) ||
+          list.find((p: any) => typeof p?.request === 'function') ||
+          null
+        );
+      };
+
+      const provider = pickProvider();
+      if (provider?.request) {
+        const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' });
         setAddress(accounts?.[0] ?? null);
+        return;
+      }
+
+      // No injected provider: suggest opening in a mobile wallet browser
+      const href = window.location.href.replace(/^https?:\/\//, '');
+      const deepLink = `https://metamask.app.link/dapp/${href}`;
+      // Try a gentle redirect on mobile so users land inside MetaMask in-app browser
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = deepLink;
       } else {
-        // Fallback: simulate connection for development if no provider present
-        setAddress('0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF');
+        alert('No Ethereum provider detected. Please install MetaMask or open this site in your wallet app.');
       }
     } finally {
       setConnecting(false);
@@ -51,4 +75,3 @@ export const useWalletContext = () => {
   if (!ctx) throw new Error('useWalletContext must be used within WalletProvider');
   return ctx;
 };
-
