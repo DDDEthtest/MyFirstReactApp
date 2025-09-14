@@ -2,6 +2,7 @@ export const ROUTES = {
   home: '/',
   collectors: '/collectors',
   collectorsCollection: '/collectors/collection',
+  collectorsMashup: '/collectors/mashup',
   artists: '/artists',
   artistDashboard: '/artists/dashboard',
   artistCreate: '/artists/create',

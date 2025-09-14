@@ -1,0 +1,143 @@
+/* Collectors shared styles (responsive) */
+
+.collectors-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  /* subtle shadow when stuck on scroll for depth */
+  box-shadow: 0 0 0 transparent;
+}
+
+.collectors-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Basic buttons (mirrors artist styles for consistency) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #4f46e5;
+  color: #fff;
+}
+.btn.secondary { background: #e5e7eb; color: #111827; }
+.btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Square floating action button used on Mashup canvas */
+.export-btn-square {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  color: #111827;
+  cursor: pointer;
+}
+.export-btn-square:hover { background: #f9fafb; }
+.export-btn-square:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Explore page */
+.explore-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.explore-title { font-size: 24px; font-weight: 700; }
+
+.explore-card {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+.explore-card img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
+
+@media (max-width: 560px) {
+  .explore-card { grid-template-columns: 1fr; }
+  .explore-card img { width: 100%; height: auto; }
+}
+
+/* Collection page */
+.collection-grid {
+  display: grid;
+  grid-template-columns: 300px 300px 1fr;
+  gap: 16px;
+}
+.collection-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+/* Mashup page */
+.mashup-layout { display: grid; gap: 16px; }
+.mashup-left { position: sticky; top: 64px; z-index: 10; background: #ffffff; }
+.mashup-right { min-width: 0; }
+.mashup-sticky { position: sticky; top: 64px; z-index: 10; }
+.mashup-canvas { display: flex; align-items: flex-start; justify-content: center; padding: 12px 0; }
+
+.nav-tabs { display: flex; gap: 10px; align-items: center; overflow-x: auto; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+.nav-tab { padding: 8px 12px; border-radius: 9999px; text-decoration: none; color: #374151; white-space: nowrap; background: #f3f4f6; cursor: pointer; }
+.nav-tab.active { background: #eef2ff; color: #1f2937; font-weight: 600; }
+
+/* Sticky navbar helper */
+.nav-sticky { position: sticky; top: 64px; z-index: 20; background: #ffffff; }
+/* subtle divider to visually separate over content */
+.nav-sticky { box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
+
+.thumb-grid { display: grid; gap: 12px; padding-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.thumb-card { border: 1px solid #e5e7eb; border-radius: 10px; background: #ffffff; overflow: hidden; }
+.thumb-card.placeholder { background: #ffffff; }
+.thumb-img { width: 100%; aspect-ratio: 1 / 1; height: auto; object-fit: contain; display: block; background: #fafafa; }
+.thumb-img.placeholder { border: 1px dashed #e5e7eb; }
+.thumb-title { padding: 6px 8px; font-size: 13px; color: #111827; }
+
+/* Larger columns as space allows */
+@media (min-width: 640px) {
+  .thumb-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .thumb-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+/* Desktop: place tabs/grid to the right of the canvas */
+@media (min-width: 1024px) {
+  .mashup-layout { grid-template-columns: max-content 1fr; align-items: start; }
+}
+
+/* Asset panel (shows assets for selected NFT) */
+.asset-panel { position: sticky; background: #ffffff; z-index: 19; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; margin-top: 8px; }
+.asset-grid { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.asset-card { border: 2px solid #d1d5db; border-radius: 10px; background: #ffffff; overflow: hidden; cursor: pointer; flex: 0 0 96px; }
+.asset-card.active { border-color: #10b981; }
+.asset-img { width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: #fafafa; display: block; }
+
+@media (min-width: 640px) { .asset-card { flex-basis: 112px; } }
+@media (min-width: 1024px) { .asset-card { flex-basis: 120px; } }
+
+/* Mobile font sizing adjustments */
+@media (max-width: 480px) {
+  .collectors-container { font-size: 16px; }
+  .nav-tab { font-size: 14px; }
+  .thumb-title { font-size: 14px; }
+}
+.collection-scroll { overflow-y: auto; }
+
+/* Stack on smaller screens */
+@media (max-width: 1100px) {
+  .collection-grid { grid-template-columns: 1fr; }
+  .collection-panel, .collection-scroll { height: auto !important; max-height: 60vh; }
+}

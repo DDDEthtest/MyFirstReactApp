@@ -176,9 +176,9 @@ export default function CollectionPage() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 300px 1fr', gap: 16 }}>
+    <div className="collection-grid">
       {/* Left: Owned NFTs */}
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff', height: mashupH, overflowY: 'auto' }}>
+      <div className="collection-panel collection-scroll" style={{ height: mashupH }}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>My NFTs</div>
         {error && <div style={{ color: '#b91c1c' }}>Error: {error}</div>}
         {owned.map((n, idx) => (
@@ -194,7 +194,7 @@ export default function CollectionPage() {
       </div>
 
       {/* Middle: Assets for selected NFT */}
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff', height: mashupH, overflowY: 'auto' }}>
+      <div className="collection-panel collection-scroll" style={{ height: mashupH }}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Assets</div>
         {candidates.map((l, i) => {
           const active = mashLayers.some((ml) => ml.image_path === l.image_path && ml.enabled);

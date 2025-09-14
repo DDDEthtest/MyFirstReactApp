@@ -27,6 +27,11 @@ export default function MashupBuilder({
   exportScale = 2,
 }) {
   const enabledLayers = Array.isArray(layers) ? layers.filter((l) => !!l?.enabled) : [];
+  const ORDER = ['background','bottom','upper','head','eyes','hat','hair','left_accessory','right_accessory'];
+  const idx = (n) => {
+    const i = ORDER.indexOf(String(n || '').toLowerCase());
+    return i === -1 ? 999 : i;
+  };
   const [exporting, setExporting] = useState(false);
 
   // Use explicit display size
@@ -163,8 +168,12 @@ export default function MashupBuilder({
             mode="background"
           />
         ))}
-        {/* Render other layers centered at 380x600 */}
-        {enabledLayers.filter(l => (l?.image_name || '').toLowerCase() !== 'background').map((layer, i) => (
+        {/* Render other layers centered at 380x600 in a stable order */}
+        {enabledLayers
+          .filter(l => (l?.image_name || '').toLowerCase() !== 'background')
+          .slice()
+          .sort((a,b) => idx(a?.image_name) - idx(b?.image_name))
+          .map((layer, i) => (
           <LayerPreview
             key={(layer?.image_name || 'layer') + ':fg:' + i}
             url={layer?.image_path}
@@ -176,11 +185,17 @@ export default function MashupBuilder({
         ))}
       </div>
 
-      <div style={{ position: 'absolute', bottom: -40, left: '50%', transform: 'translateX(-50%)' }}>
-        <button onClick={exportMashup} disabled={exporting}>
-          {exporting ? 'Exporting…' : 'Export mashup'}
-        </button>
-      </div>
+      {/* Floating export button (top-right, square) */}
+      <button
+        className="export-btn-square"
+        onClick={exportMashup}
+        disabled={exporting}
+        title="Export mashup"
+        aria-label="Export mashup"
+        style={{ position: 'absolute', top: 8, right: 8 }}
+      >
+        {exporting ? '…' : '⤓'}
+      </button>
     </div>
   );
 }

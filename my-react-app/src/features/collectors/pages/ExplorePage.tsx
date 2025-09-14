@@ -79,17 +79,17 @@ const ExplorePage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-      <h2 style={{ fontSize: 24, fontWeight: 700 }}>Explore Listings</h2>
+    <div className="explore-grid">
+      <h2 className="explore-title">Explore Listings</h2>
       {err && <div style={{ color: '#b91c1c' }}>Error: {err}</div>}
       {items.map((it) => (
-        <div key={it.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12, alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff' }}>
-          <img src={it.Composite ? ipfsToHttp(it.Composite) : (meta[it.id]?.image || '')} alt={it.id} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+        <div key={it.id} className="explore-card">
+          <img src={it.Composite ? ipfsToHttp(it.Composite) : (meta[it.id]?.image || '')} alt={it.id} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div><strong>Artist:</strong> {it['artist-name'] || 'Unknown'}</div>
             <div><strong>Name:</strong> {meta[it.id]?.name || 'Untitled'}</div>
             <div><strong>Price:</strong> {it.priceMatic} MATIC</div>
-            <div><strong>Max Supply:</strong> {it.maxSupply ?? '—'}</div>
+            <div><strong>Max Supply:</strong> {it.maxSupply ?? '-'}</div>
             <div>
               <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id]}>
                 {buying[it.id] ? 'Minting…' : 'Mint'}
@@ -103,3 +103,4 @@ const ExplorePage: React.FC = () => {
 };
 
 export default ExplorePage;
+

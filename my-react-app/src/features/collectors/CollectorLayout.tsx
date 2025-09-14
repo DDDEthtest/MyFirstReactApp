@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../shared/lib/constants';
 import { WalletProvider } from '../../providers/WalletProvider';
 import { useWallet } from '../../shared/hooks/useWallet';
+import './collectors.css';
 
 const NavLink: React.FC<{ to: string; label: string }> = ({ to, label }) => {
   const loc = useLocation();
@@ -34,15 +35,18 @@ const CollectorLayout: React.FC = () => {
   return (
     <WalletProvider>
       <div>
-        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link to={ROUTES.collectors} style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>Collector Portal</Link>
-            <NavLink to={ROUTES.collectors} label="Explore" />
-            <NavLink to={ROUTES.collectorsCollection} label="Collection" />
+        <header className="collectors-header">
+          <div className="collectors-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Link to={ROUTES.collectors} style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>Collector Portal</Link>
+              <NavLink to={ROUTES.collectors} label="Explore" />
+              <NavLink to={ROUTES.collectorsCollection} label="Collection" />
+              <NavLink to={ROUTES.collectorsMashup} label="Mashup" />
+            </div>
+            <WalletBadge />
           </div>
-          <WalletBadge />
         </header>
-        <main style={{ padding: 16 }}>
+        <main className="collectors-container">
           <Outlet />
         </main>
       </div>

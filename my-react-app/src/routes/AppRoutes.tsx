@@ -11,6 +11,7 @@ const ArtistCreate = lazy(() => import('../features/artists/pages/CreateNftPage'
 const ArtistAssets = lazy(() => import('../features/artists/pages/AssetsPage'));
 const CollectorsExplore = lazy(() => import('../features/collectors/pages/ExplorePage'));
 const CollectorsCollection = lazy(() => import('../features/collectors/pages/CollectionPage'));
+const CollectorsMashup = lazy(() => import('../features/collectors/pages/MashupPage'));
 
 const ArtistLanding: React.FC = () => {
   const { connected, address } = useWallet();
@@ -57,6 +58,7 @@ export const AppRoutes: React.FC = () => {
         <Route path={ROUTES.collectors} element={<CollectorLayout />}>
           <Route index element={<CollectorsExplore />} />
           <Route path={ROUTES.collectorsCollection.replace(`${ROUTES.collectors}/`, '')} element={<CollectorsCollection />} />
+          <Route path={ROUTES.collectorsMashup.replace(`${ROUTES.collectors}/`, '')} element={<CollectorsMashup />} />
         </Route>
         {/* Home redirects to collectors */}
         <Route path={ROUTES.home} element={<Navigate to={ROUTES.collectors} replace />} />
