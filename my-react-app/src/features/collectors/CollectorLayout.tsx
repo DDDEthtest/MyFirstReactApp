@@ -9,7 +9,7 @@ const NavLink: React.FC<{ to: string; label: string }> = ({ to, label }) => {
   const loc = useLocation();
   const active = loc.pathname === to;
   return (
-    <Link className="top-tab" to={to} style={{ padding: '8px 12px', borderRadius: 6, textDecoration: 'none', color: active ? '#1f2937' : '#374151', background: active ? '#eef2ff' : 'transparent' }}>
+    <Link className={`top-tab${active ? ' is-active' : ''}`} to={to}>
       {label}
     </Link>
   );
@@ -36,9 +36,9 @@ const CollectorLayout: React.FC = () => {
     <WalletProvider>
       <div>
         <header className="collectors-header">
-          <div className="collectors-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Link to={ROUTES.collectors} className="brand" style={{ fontWeight: 700, color: '#111827', textDecoration: 'none' }}>Collector Portal</Link>
+          <div className="collectors-container hdr">
+            <div className="hdr-left">
+              <Link to={ROUTES.collectors} className="brand">Collector Portal</Link>
               <NavLink to={ROUTES.collectors} label="Explore" />
               <NavLink to={ROUTES.collectorsCollection} label="Collection" />
               <NavLink to={ROUTES.collectorsMashup} label="Mashup" />

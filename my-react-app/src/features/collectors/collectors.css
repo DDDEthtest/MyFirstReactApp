@@ -1,4 +1,5 @@
 /* Collectors shared styles (responsive) */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
 
 .collectors-header {
   position: sticky;
@@ -10,10 +11,25 @@
   box-shadow: 0 0 0 transparent;
 }
 
+/* Header layout + tabs */
+.hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+.hdr-left { display: flex; align-items: center; gap: 12px; }
+.brand { font-weight: 700; color: #111827; text-decoration: none; font-size: clamp(22px, 6vw, 30px); }
+.top-tab { padding: 10px 14px; border-radius: 6px; text-decoration: none; color: #374151; background: transparent; font-size: clamp(18px, 5vw, 26px); }
+.top-tab.is-active { color: #1f2937; background: #eef2ff; }
+
 .collectors-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 16px;
+}
+
+/* Force Roboto across the collectors pages (header + content) */
+.collectors-header,
+.collectors-container,
+.collectors-header *,
+.collectors-container * {
+  font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif !important;
 }
 
 /* Basic buttons (mirrors artist styles for consistency) */
@@ -30,6 +46,14 @@
 }
 .btn.secondary { background: #e5e7eb; color: #111827; }
 .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Larger wallet button in header */
+.collectors-header .btn,
+.collectors-header .btn.secondary {
+  font-size: clamp(16px, 4.5vw, 22px);
+  padding: 10px 16px;
+  min-height: 40px;
+}
 
 /* Square floating action button used on Mashup canvas */
 .export-btn-square {
@@ -90,7 +114,7 @@
 .mashup-canvas { display: flex; align-items: flex-start; justify-content: center; padding: 12px 0; }
 
 .nav-tabs { display: flex; gap: 10px; align-items: center; overflow-x: auto; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
-.nav-tab { padding: 8px 12px; border-radius: 9999px; text-decoration: none; color: #374151; white-space: nowrap; background: #f3f4f6; cursor: pointer; }
+.nav-tab { padding: 12px 16px; border-radius: 9999px; text-decoration: none; color: #374151; white-space: nowrap; background: #f3f4f6; cursor: pointer; font-size: clamp(18px, 4.5vw, 26px); min-height: 44px; }
 .nav-tab.active { background: #eef2ff; color: #1f2937; font-weight: 600; }
 
 /* Sticky navbar helper */
@@ -131,10 +155,10 @@
 /* Mobile font sizing adjustments */
 @media (max-width: 768px) {
   .collectors-container { font-size: 16px; }
-  .collectors-header a { font-size: 20px; }
-  .collectors-header .brand { font-size: 22px; }
-  .collectors-header .top-tab { font-size: 18px; }
-  .nav-tab { font-size: 20px; padding: 12px 16px; min-height: 44px; }
+  /* Increase specificity and force to avoid inline/default overrides */
+  header.collectors-header .hdr-left .brand { font-size: 24px !important; }
+  header.collectors-header .hdr-left .top-tab { font-size: 22px !important; padding: 12px 18px !important; line-height: 1.2; }
+  .nav-tab { font-size: 20px !important; padding: 12px 16px; min-height: 44px; }
   .collectors-header .btn, .collectors-header .btn.secondary { font-size: 18px; padding: 10px 14px; min-height: 40px; }
   .thumb-title { font-size: 14px; }
 }
@@ -145,3 +169,4 @@
   .collection-grid { grid-template-columns: 1fr; }
   .collection-panel, .collection-scroll { height: auto !important; max-height: 60vh; }
 }
+
