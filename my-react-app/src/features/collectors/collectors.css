@@ -144,6 +144,8 @@
 
 /* Asset panel (shows assets for selected NFT) */
 .asset-panel { position: sticky; background: #ffffff; z-index: 19; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; margin-top: 8px; }
+.color-panel { position: sticky; bottom: 8px; background: #ffffff; z-index: 19; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-top: 8px; max-height: 320px; overflow: auto; }
+.color-panel .chrome-picker, .color-panel [class*="chrome-picker"] { width: 100% !important; box-shadow: none; }
 .asset-grid { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
 .asset-card { border: 2px solid #d1d5db; border-radius: 10px; background: #ffffff; overflow: hidden; cursor: pointer; flex: 0 0 96px; }
 .asset-card.active { border-color: #10b981; }

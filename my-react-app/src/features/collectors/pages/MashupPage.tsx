@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MashupBuilder from '../../../collectors/MashupBuilder';
 import { useWallet } from '../../../shared/hooks/useWallet';
+import ColorPanel from '../components/ColorPanel';
 
 type OwnedNft = {
   id: string;
@@ -146,6 +147,12 @@ const MashupPage: React.FC = () => {
   // Layer draw order: background behind all, then bottom -> ... -> right_accessory
   const PREFERRED_ORDER = ['background', 'bottom', 'upper', 'head', 'eyes', 'hat', 'hair', 'left_accessory', 'right_accessory'];
 
+  // Color controls for SVG-tintable layers
+  const [baseColor, setBaseColor] = useState<string>('#00ff00');
+  const [eyesColor, setEyesColor] = useState<string>('#ffff00');
+  const [hairColor, setHairColor] = useState<string>('#0000ff');
+  const [activePicker, setActivePicker] = useState<null | 'base' | 'eyes' | 'hair'>(null);
+
   function ipfsToHttp(uri?: string) {
     if (!uri) return '';
     const after = uri.startsWith('ipfs://') ? uri.slice('ipfs://'.length) : uri.replace(/^https?:\/\/[^/]*\/ipfs\//i, '');
@@ -263,7 +270,21 @@ const MashupPage: React.FC = () => {
       <div className="mashup-left" style={{ width: isDesktop ? w : 'auto', top: headerH }}>
         <div className="mashup-sticky" style={{ top: headerH }}>
           <div className="mashup-canvas">
-            <MashupBuilder layers={mashLayers} width={w} height={h} background="#ffffff" style={{}} />
+            <MashupBuilder
+              layers={mashLayers}
+              width={w}
+              height={h}
+              background="#ffffff"
+              style={{}}
+              colorMap={{
+                bottom: baseColor,
+                upper: baseColor,
+                face: baseColor,
+                head: baseColor,
+                eyes: eyesColor,
+                hair: hairColor,
+              }}
+            />
           </div>
         </div>
       </div>
@@ -277,18 +298,37 @@ const MashupPage: React.FC = () => {
           style={{ top: isDesktop ? headerH : headerH + h + 12, marginTop: 8 }}
         >
           {TABS.map(t => (
-            <button
-              key={t.key}
-              className={`nav-tab${active === t.key ? ' active' : ''}`}
-              onClick={() => setActive(t.key)}
-            >
-              {t.label}
-            </button>
+            <React.Fragment key={t.key}>
+              <button
+                className={`nav-tab${active === t.key ? ' active' : ''}`}
+                onClick={() => setActive(t.key)}
+              >
+                {t.label}
+              </button>
+              {t.key === 'right_accessory' && (
+                <div style={{ display: 'inline-flex', gap: 10, marginLeft: 10 }}>
+                  <ColorSwatchButton
+                    color={baseColor}
+                    title="Base color (bottom, upper, face)"
+                    onClick={() => setActivePicker(p => p === 'base' ? null : 'base')}
+                  />
+                  <ColorSwatchButton
+                    color={eyesColor}
+                    title="Eyes color"
+                    onClick={() => setActivePicker(p => p === 'eyes' ? null : 'eyes')}
+                  />
+                  <ColorSwatchButton
+                    color={hairColor}
+                    title="Hair color"
+                    onClick={() => setActivePicker(p => p === 'hair' ? null : 'hair')}
+                  />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </nav>
 
-      {/* Overlay panel: shows either selected collectible assets (Collectibles tab)
-          or a specific category when user selects another tab. */}
+      {/* Asset panel: shows selected collectible assets or specific category */}
       {(panelOpen || active !== 'collectibles') && (
         <div
           className="asset-panel"
@@ -299,7 +339,10 @@ const MashupPage: React.FC = () => {
               ? candidates
               : (assetsByCategory[active] || [])
             ).map((l, i) => {
-              const isOn = !!mashLayers.find(ml => ml.image_path === l.image_path && ml.enabled);
+              const isOn = !!mashLayers.find(ml => (
+                (ml.image_name || '').toLowerCase() === (l.image_name || '').toLowerCase() &&
+                ml.image_path === l.image_path && ml.enabled
+              ));
               const item = { ...l, enabled: isOn };
               return (
               <div
@@ -321,27 +364,41 @@ const MashupPage: React.FC = () => {
       )}
 
       {/* Content area under navbar */}
-      {active === 'collectibles' ? (
-        <div className="thumb-grid">
-          {owned.map((n) => (
-            <div key={n.id} className="thumb-card" title={n.name || `#${n.id}`} onClick={() => onCollectibleClick(n)}>
-              <MultiGatewayImg className="thumb-img" uri={n.image} alt={n.name || String(n.id)} />
-            </div>
-          ))}
-          {/* Placeholders for UX/scroll behavior preview */}
-            {Array.from({ length: PLACEHOLDER_COUNT }).map((_, i) => (
-              <div key={`ph-${i}`} className="thumb-card placeholder">
-                <div className="thumb-img placeholder" />
-              </div>
-            ))}
-          {owned.length === 0 && (
-            <div style={{ color: '#6b7280' }}>
-              {collectionAddr ? 'No collectibles from this collection found for this wallet.' : 'No collectibles found for this wallet.'}
-            </div>
-          )}
+      {activePicker ? (
+        <div className="color-panel" style={{ marginTop: 8 }}>
+          <ColorPanel
+            color={activePicker === 'base' ? baseColor : activePicker === 'eyes' ? eyesColor : hairColor}
+            onChange={(hex) => {
+              if (activePicker === 'base') setBaseColor(hex);
+              else if (activePicker === 'eyes') setEyesColor(hex);
+              else setHairColor(hex);
+            }}
+            onClose={() => setActivePicker(null)}
+          />
         </div>
       ) : (
-        <div style={{ padding: '12px 0', color: '#6b7280' }}>No items available for this tab yet.</div>
+        active === 'collectibles' ? (
+          <div className="thumb-grid">
+            {owned.map((n) => (
+              <div key={n.id} className="thumb-card" title={n.name || `#${n.id}`} onClick={() => onCollectibleClick(n)}>
+                <MultiGatewayImg className="thumb-img" uri={n.image} alt={n.name || String(n.id)} />
+              </div>
+            ))}
+            {/* Placeholders for UX/scroll behavior preview */}
+              {Array.from({ length: PLACEHOLDER_COUNT }).map((_, i) => (
+                <div key={`ph-${i}`} className="thumb-card placeholder">
+                  <div className="thumb-img placeholder" />
+                </div>
+              ))}
+            {owned.length === 0 && (
+              <div style={{ color: '#6b7280' }}>
+                {collectionAddr ? 'No collectibles from this collection found for this wallet.' : 'No collectibles found for this wallet.'}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ padding: '12px 0', color: '#6b7280' }}>No items available for this tab yet.</div>
+        )
       )}
       </div>
     </div>
@@ -349,3 +406,21 @@ const MashupPage: React.FC = () => {
 };
 
 export default MashupPage;
+
+// Small colored square button used in navbar
+const ColorSwatchButton: React.FC<{ color: string; title?: string; onClick?: () => void }>
+  = ({ color, title, onClick }) => {
+  return (
+    <button
+      type="button"
+      className="color-swatch-btn"
+      onClick={onClick}
+      title={title}
+      style={{
+        width: 44, height: 44, borderRadius: 12, border: '1px solid #1f2937', background: '#111827', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+      }}
+    >
+      <span style={{ display: 'inline-block', width: 26, height: 26, borderRadius: 8, background: color, boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.25)' }} />
+    </button>
+  );
+};

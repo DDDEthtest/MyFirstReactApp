@@ -47,22 +47,27 @@ export const WalletProvider: React.FC<React.PropsWithChildren<{}>> = ({ children
     try {
       setConnecting(true);
       // Prefer a real EIP-1193 provider; never fall back to a dummy address.
-      const eth = (window as any)?.ethereum as any;
-
-      // Some environments expose multiple providers (e.g., MetaMask + Coinbase)
-      const pickProvider = () => {
-        if (!eth) return null;
-        const list: any[] = Array.isArray(eth?.providers) ? eth.providers : [eth];
-        // Prefer MetaMask, then Coinbase Wallet, then the first provider
-        return (
-          list.find((p: any) => p?.isMetaMask) ||
-          list.find((p: any) => p?.isCoinbaseWallet) ||
-          list.find((p: any) => typeof p?.request === 'function') ||
-          null
-        );
+      const detectProvider = async (): Promise<any | null> => {
+        const maxWaitMs = 800;
+        const start = Date.now();
+        while (Date.now() - start < maxWaitMs) {
+          const eth = (window as any)?.ethereum as any;
+          if (eth) {
+            const list: any[] = Array.isArray(eth?.providers) ? eth.providers : [eth];
+            const p = (
+              list.find((x: any) => x?.isMetaMask) ||
+              list.find((x: any) => x?.isCoinbaseWallet) ||
+              list.find((x: any) => typeof x?.request === 'function') ||
+              null
+            );
+            if (p) return p;
+          }
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        return null;
       };
 
-      const provider = pickProvider();
+      const provider = await detectProvider();
       if (provider?.request) {
         const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' });
         providerRef.current = provider;
@@ -81,7 +86,8 @@ export const WalletProvider: React.FC<React.PropsWithChildren<{}>> = ({ children
       if (isMobile) {
         window.location.href = deepLink;
       } else {
-        alert('No Ethereum provider detected. Please install MetaMask or open this site in your wallet app.');
+        // Provide a clear message without blocking if popup blockers interfere
+        window.alert('No Ethereum provider detected. Please install MetaMask or open this site in your wallet app.');
       }
     } finally {
       setConnecting(false);

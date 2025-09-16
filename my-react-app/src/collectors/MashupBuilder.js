@@ -25,6 +25,8 @@ export default function MashupBuilder({
   displayScale = 1,
   // Multiplier for exported PNG resolution (e.g., 2 = 2x display size)
   exportScale = 2,
+  // Optional per-layer color overrides (for SVG layers)
+  colorMap = {}, // e.g., { bottom: '#00ff00', upper: '#00ff00', face: '#00ff00', eyes: '#ffff00', hair: '#0000ff' }
 }) {
   const enabledLayers = Array.isArray(layers) ? layers.filter((l) => !!l?.enabled) : [];
   const ORDER = ['background','bottom','upper','head','eyes','hat','hair','left_accessory','right_accessory'];
@@ -166,6 +168,7 @@ export default function MashupBuilder({
             alt={layer?.image_name || `Layer ${i + 1}`}
             makeCandidates={makeCandidates}
             mode="background"
+            tint={colorMap[String(layer?.image_name || '').toLowerCase()]}
           />
         ))}
         {/* Render other layers centered at 380x600 in a stable order */}
@@ -181,6 +184,7 @@ export default function MashupBuilder({
             makeCandidates={makeCandidates}
             mode="foreground"
             target={{ w: FG_W, h: FG_H }}
+            tint={colorMap[String(layer?.image_name || '').toLowerCase()]}
           />
         ))}
       </div>
@@ -200,7 +204,7 @@ export default function MashupBuilder({
   );
 }
 
-function LayerPreview({ url, alt, makeCandidates, mode = 'background', target }) {
+function LayerPreview({ url, alt, makeCandidates, mode = 'background', target, tint }) {
   const [idx, setIdx] = useState(0);
   const [list, setList] = useState(() => makeCandidates(url));
   useEffect(() => { setList(makeCandidates(url)); setIdx(0); }, [url, makeCandidates]);
@@ -221,9 +225,14 @@ function LayerPreview({ url, alt, makeCandidates, mode = 'background', target })
         position: 'absolute', top: '50%', left: '50%', width: (target?.w || 380) + 'px', height: (target?.h || 600) + 'px', transform: 'translate(-50%, -50%)', objectFit: 'fill', imageRendering: 'auto', mixBlendMode: 'normal'
       };
 
-  return (
-    <img src={current} alt={alt} referrerPolicy="no-referrer" onError={onError} style={style} />
-  );
+  // If a tint is requested, attempt SVG inline rendering even if the URL lacks an .svg extension.
+  if (tint) {
+    return (
+      <InlineSvg url={current} alt={alt} style={style} onError={onError} makeCandidates={makeCandidates} color={tint} />
+    );
+  }
+
+  return <img src={current} alt={alt} referrerPolicy="no-referrer" onError={onError} style={style} />;
 }
 
 function loadImage(url) {
@@ -242,3 +251,104 @@ function downloadDataUrl(dataUrl, filename) {
   a.download = filename || 'download.png';
   a.click();
 }
+
+// Inline SVG renderer with color override
+function InlineSvg({ url, alt, style, onError, makeCandidates, color }) {
+  const [svgText, setSvgText] = useState(null);
+  // Show the original image while we try to fetch + inline the SVG
+  const [fallbackImg, setFallbackImg] = useState(url);
+  const [idx, setIdx] = useState(0);
+  const [list, setList] = useState(() => makeCandidates(url));
+  useEffect(() => { setList(makeCandidates(url)); setIdx(0); setSvgText(null); setFallbackImg(url); }, [url, makeCandidates]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      for (let i = idx; i < list.length; i++) {
+        try {
+          const res = await fetch(list[i], { credentials: 'omit', mode: 'cors' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const ct = (res.headers.get('content-type') || '').toLowerCase();
+          const txt = await res.text();
+          const looksSvg = ct.includes('image/svg') || /<svg[\s\S]*<\/svg>/i.test(txt);
+          if (!cancelled) {
+            if (looksSvg) {
+              setSvgText(applyColorToSvgScoped(txt, color));
+              setFallbackImg(null);
+            } else {
+              setFallbackImg(list[i]);
+            }
+          }
+          return;
+        } catch (e) {
+          // try next
+          if (i === list.length - 1) {
+            if (typeof onError === 'function') onError(e);
+          }
+        }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [list, idx, color, onError]);
+
+  if (svgText) {
+    // eslint-disable-next-line react/no-danger
+    return <div role="img" aria-label={alt} style={style} dangerouslySetInnerHTML={{ __html: svgText }} />;
+  }
+  if (fallbackImg) {
+    return <img src={fallbackImg} alt={alt} referrerPolicy="no-referrer" style={style} onError={onError} />;
+  }
+  return null;
+}
+
+// Safer scoping: prevent color bleed between multiple inline SVGs
+function applyColorToSvgScoped(svgString, color) {
+  try {
+    const uid = 'tint-' + Math.random().toString(36).slice(2);
+    const styleTag = `<style>.${uid} *{fill: ${color} !important;}</style>`;
+    if (/<svg[^>]*>/i.test(svgString)) {
+      return svgString
+        .replace(/<svg([^>]*)>/i, (m, attrs) => {
+          let a = attrs || '';
+          a = a.replace(/\swidth=\"[^\"]*\"/ig, '');
+          a = a.replace(/\sheight=\"[^\"]*\"/ig, '');
+          if (/\sclass=\"[^\"]*\"/i.test(a)) {
+            a = a.replace(/\sclass=\"([^\"]*)\"/i, (mm, classes) => ` class=\"${classes} ${uid}\"`);
+          } else {
+            a += ` class=\"${uid}\"`;
+          }
+          return `<svg${a} width=\"100%\" height=\"100%\" preserveAspectRatio=\"none\">${styleTag}`;
+        });
+    }
+    return styleTag + svgString;
+  } catch (_) {
+    return svgString;
+  }
+}
+
+function applyColorToSvg(svgString, color) {
+  try {
+    // Inject a style block forcing fill to the requested color (keep strokes/outline as-is)
+    const hasStyle = /<style[\s\S]*?>[\s\S]*?<\/style>/i.test(svgString);
+    const styleTag = `<style>*{fill: ${color} !important;} svg{width:100%;height:100%;}</style>`;
+    if (/<svg[^>]*>/i.test(svgString)) {
+      return svgString
+        .replace(/<svg([^>]*)>/i, (m, attrs) => {
+          let a = attrs || '';
+          // Ensure width/height 100%
+          a = a.replace(/\swidth="[^"]*"/i, '');
+          a = a.replace(/\sheight="[^"]*"/i, '');
+          if (!/viewBox=/i.test(a)) {
+            // leave as-is if no viewBox; scaling may distort but better visible
+          }
+          return `<svg${a} width="100%" height="100%" preserveAspectRatio="none">${styleTag}`;
+        });
+    }
+    // Fallback: prepend style
+    return styleTag + svgString;
+  } catch (_) {
+    return svgString;
+  }
+}
+

@@ -14,6 +14,7 @@ type ListedDoc = {
   priceMatic?: string; // string for display
   maxSupply?: number;
   listingId?: string;
+  paused?: boolean;
 };
 
 type TokenMeta = {
@@ -91,7 +92,7 @@ const ExplorePage: React.FC = () => {
             <div><strong>Price:</strong> {it.priceMatic} MATIC</div>
             <div><strong>Max Supply:</strong> {it.maxSupply ?? '-'}</div>
             <div>
-              <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id]}>
+              <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id] || it.paused}>
                 {buying[it.id] ? 'Minting…' : 'Mint'}
               </button>
             </div>
@@ -103,4 +104,3 @@ const ExplorePage: React.FC = () => {
 };
 
 export default ExplorePage;
-

@@ -5,6 +5,8 @@ import CollectorLayout from '../features/collectors/CollectorLayout';
 import { ROUTES } from '../shared/lib/constants';
 import { useWallet } from '../shared/hooks/useWallet';
 import { useArtistProfile } from '../features/artists/hooks/useArtistProfile';
+import AdminLayout from '../features/admin/AdminLayout';
+import { useAdmin } from '../features/admin/hooks/useAdmin';
 
 const ArtistDashboard = lazy(() => import('../features/artists/pages/DashboardPage'));
 const ArtistCreate = lazy(() => import('../features/artists/pages/CreateNftPage'));
@@ -12,6 +14,10 @@ const ArtistAssets = lazy(() => import('../features/artists/pages/AssetsPage'));
 const CollectorsExplore = lazy(() => import('../features/collectors/pages/ExplorePage'));
 const CollectorsCollection = lazy(() => import('../features/collectors/pages/CollectionPage'));
 const CollectorsMashup = lazy(() => import('../features/collectors/pages/MashupPage'));
+const AdminAllowlist = lazy(() => import('../features/admin/pages/AllowlistPage'));
+const AdminApprovals = lazy(() => import('../features/admin/pages/ApprovalsPage'));
+const AdminArtists = lazy(() => import('../features/admin/pages/ArtistsPage'));
+const AdminMinting = lazy(() => import('../features/admin/pages/MintingPage'));
 
 const ArtistLanding: React.FC = () => {
   const { connected, address } = useWallet();
@@ -80,6 +86,27 @@ export const AppRoutes: React.FC = () => {
           />
         </Route>
 
+        {/* Admin routes */}
+        <Route path={ROUTES.admin} element={<AdminLayout />}>
+          <Route index element={<Navigate to={ROUTES.adminAllowlist} replace />} />
+          <Route
+            path={ROUTES.adminAllowlist.replace(`${ROUTES.admin}/`, '')}
+            element={(<AdminRoute><AdminAllowlist /></AdminRoute>)}
+          />
+          <Route
+            path={ROUTES.adminApprovals.replace(`${ROUTES.admin}/`, '')}
+            element={(<AdminRoute><AdminApprovals /></AdminRoute>)}
+          />
+          <Route
+            path={ROUTES.adminArtists.replace(`${ROUTES.admin}/`, '')}
+            element={(<AdminRoute><AdminArtists /></AdminRoute>)}
+          />
+          <Route
+            path={ROUTES.adminMinting.replace(`${ROUTES.admin}/`, '')}
+            element={(<AdminRoute><AdminMinting /></AdminRoute>)}
+          />
+        </Route>
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to={ROUTES.collectors} replace />} />
       </Routes>
@@ -88,3 +115,19 @@ export const AppRoutes: React.FC = () => {
 };
 
 export default AppRoutes;
+
+const AdminRoute: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
+  const { connected, connect } = useWallet();
+  const { isAdmin, loading, error } = useAdmin();
+  if (!connected) {
+    return (
+      <div style={{ padding: 16 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>Admin access requires a connected wallet.</div>
+        <button className="btn" onClick={connect}>Connect Wallet</button>
+      </div>
+    );
+  }
+  if (loading) return <div>Checking admin…</div>;
+  if (!isAdmin) return <div style={{ color: '#b91c1c' }}>Admin access denied for this wallet{error ? ` (${error})` : ''}.</div>;
+  return <>{children}</>;
+};
