@@ -35,6 +35,9 @@ export default function MashupBuilder({
     return i === -1 ? 999 : i;
   };
   const [exporting, setExporting] = useState(false);
+  const [loadingCount, setLoadingCount] = useState(0);
+  const startLoading = useCallback(() => setLoadingCount((n) => n + 1), []);
+  const finishLoading = useCallback(() => setLoadingCount((n) => Math.max(0, n - 1)), []);
 
   // Use explicit display size
   const exportWidth = width;
@@ -169,6 +172,8 @@ export default function MashupBuilder({
             makeCandidates={makeCandidates}
             mode="background"
             tint={colorMap[String(layer?.image_name || '').toLowerCase()]}
+            startLoading={startLoading}
+            finishLoading={finishLoading}
           />
         ))}
         {/* Render other layers centered at 380x600 in a stable order */}
@@ -185,9 +190,17 @@ export default function MashupBuilder({
             mode="foreground"
             target={{ w: FG_W, h: FG_H }}
             tint={colorMap[String(layer?.image_name || '').toLowerCase()]}
+            startLoading={startLoading}
+            finishLoading={finishLoading}
           />
         ))}
       </div>
+
+      {loadingCount > 0 && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.6)', borderRadius: 10, fontWeight: 600, color: '#374151' }}>
+          Loading...
+        </div>
+      )}
 
       {/* Floating export button (top-right, square) */}
       <button
@@ -204,10 +217,23 @@ export default function MashupBuilder({
   );
 }
 
-function LayerPreview({ url, alt, makeCandidates, mode = 'background', target, tint }) {
+function LayerPreview({ url, alt, makeCandidates, mode = 'background', target, tint, startLoading, finishLoading }) {
   const [idx, setIdx] = useState(0);
   const [list, setList] = useState(() => makeCandidates(url));
   useEffect(() => { setList(makeCandidates(url)); setIdx(0); }, [url, makeCandidates]);
+
+  // track loading lifecycle
+  const reportedRef = React.useRef(false);
+  useEffect(() => {
+    reportedRef.current = false;
+    if (typeof startLoading === 'function') startLoading();
+    // finishLoading will be called after successful load or fallback
+    // Ensure we don't leave overlay on error with no candidates
+    return () => {
+      if (!reportedRef.current && typeof finishLoading === 'function') finishLoading();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
 
   const current = list[idx] || url;
   if (!current) return null;
@@ -228,11 +254,12 @@ function LayerPreview({ url, alt, makeCandidates, mode = 'background', target, t
   // If a tint is requested, attempt SVG inline rendering even if the URL lacks an .svg extension.
   if (tint) {
     return (
-      <InlineSvg url={current} alt={alt} style={style} onError={onError} makeCandidates={makeCandidates} color={tint} />
+      <InlineSvg url={current} alt={alt} style={style} onError={onError} makeCandidates={makeCandidates} color={tint} onReady={() => { if (!reportedRef.current && typeof finishLoading==='function') { reportedRef.current=true; finishLoading(); } }} />
     );
   }
-
-  return <img src={current} alt={alt} referrerPolicy="no-referrer" onError={onError} style={style} />;
+  const onLoad = () => { if (!reportedRef.current && typeof finishLoading==='function') { reportedRef.current=true; finishLoading(); } };
+  const onErr = () => { if (!reportedRef.current && typeof finishLoading==='function') { reportedRef.current=true; finishLoading(); } onError?.(); };
+  return <img src={current} alt={alt} referrerPolicy="no-referrer" onError={onErr} onLoad={onLoad} style={style} />;
 }
 
 function loadImage(url) {
@@ -253,7 +280,7 @@ function downloadDataUrl(dataUrl, filename) {
 }
 
 // Inline SVG renderer with color override
-function InlineSvg({ url, alt, style, onError, makeCandidates, color }) {
+function InlineSvg({ url, alt, style, onError, makeCandidates, color, onReady }) {
   const [svgText, setSvgText] = useState(null);
   // Show the original image while we try to fetch + inline the SVG
   const [fallbackImg, setFallbackImg] = useState(url);
@@ -275,8 +302,10 @@ function InlineSvg({ url, alt, style, onError, makeCandidates, color }) {
             if (looksSvg) {
               setSvgText(applyColorToSvgScoped(txt, color));
               setFallbackImg(null);
+              onReady?.();
             } else {
               setFallbackImg(list[i]);
+              onReady?.();
             }
           }
           return;
@@ -284,6 +313,7 @@ function InlineSvg({ url, alt, style, onError, makeCandidates, color }) {
           // try next
           if (i === list.length - 1) {
             if (typeof onError === 'function') onError(e);
+            onReady?.();
           }
         }
       }

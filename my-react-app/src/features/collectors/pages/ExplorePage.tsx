@@ -165,6 +165,18 @@ const ExplorePage: React.FC = () => {
               <MashupBuilder layers={previewLayers} width={420} height={560} background="#ffffff" style={{}} />
             </div>
             <div className="overlay-right">
+              <div className="overlay-header">
+                <div className="name">{meta[previewFor]?.name || 'Untitled'}</div>
+                <div className="artist">by {(items.find(x => x.id === previewFor)?.['artist-name']) || 'Unknown'}</div>
+                {(() => { const s = sold[previewFor] ?? 0; const max = items.find(x => x.id===previewFor)?.maxSupply; return (
+                  <div className="minted">Total minted: {s}{typeof max==='number' ? ` / ${max}`: ''}</div>
+                ); })()}
+                {(() => { const s = sold[previewFor] ?? 0; const max = items.find(x => x.id===previewFor)?.maxSupply; const so = typeof max==='number' && s>=max; const it = items.find(x => x.id===previewFor)!; return (
+                  <div style={{ marginTop: 8 }}>
+                    <button className={`btn${so ? ' soldout' : ''}`} disabled={so || !!buying[previewFor] || it?.paused} onClick={() => onMint(it)}>{so ? 'Sold out' : (buying[previewFor] ? 'Minting…' : 'Mint')}</button>
+                  </div>
+                ); })()}
+              </div>
               <div className="overlay-list">
                 {(assets[previewFor] || []).map((a, i) => (
                   <div key={a.image_name + i} className={`asset-card${previewLayers.find(l => l.image_name===a.image_name && l.enabled) ? ' active' : ''}`} onClick={() => togglePreviewLayer(a.image_name)}>
