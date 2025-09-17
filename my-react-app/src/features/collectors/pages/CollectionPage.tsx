@@ -64,7 +64,7 @@ async function composeFlattened(uri?: string, caption?: string, W = 800, H = 120
       const y = Math.round((H - h) / 2);
       ctx.drawImage(img, x, y, w, h);
       if (caption) {
-        const yText = H - 110; // a bit above bottom
+        const yText = H - 90; // nudge slightly closer to bottom
         ctx.font = '700 56px Roboto, system-ui, -apple-system, Segoe UI, Helvetica, Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
