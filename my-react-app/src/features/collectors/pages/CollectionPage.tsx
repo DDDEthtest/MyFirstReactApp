@@ -46,12 +46,17 @@ async function fetchOwnedAll({ apiKey, owner }: { apiKey?: string; owner: string
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Alchemy getNFTsForOwner ${res.status}`);
   const data = await res.json();
-  const out: OwnedNft[] = (data?.ownedNfts || []).map((n: any) => ({
-    id: n?.tokenId || n?.id?.tokenId || Math.random().toString(36).slice(2),
-    name: n?.title || n?.raw?.metadata?.name,
-    image: n?.image?.cachedUrl || n?.image?.originalUrl || n?.raw?.metadata?.image || n?.media?.[0]?.gateway,
-    metadata: n?.raw?.metadata || n?.metadata,
-  }));
+  const out: OwnedNft[] = (data?.ownedNfts || []).map((n: any) => {
+    const rawId = n?.tokenId || n?.id?.tokenId || 0;
+    let decId = String(rawId);
+    try { decId = BigInt(rawId).toString(10); } catch {}
+    return {
+      id: decId,
+      name: n?.title || n?.raw?.metadata?.name,
+      image: n?.image?.cachedUrl || n?.image?.originalUrl || n?.raw?.metadata?.image || n?.media?.[0]?.gateway,
+      metadata: n?.raw?.metadata || n?.metadata,
+    };
+  });
   return out;
 }
 
@@ -65,12 +70,17 @@ async function fetchOwnedByContract({ apiKey, owner, contract }: { apiKey?: stri
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Alchemy getNFTsForOwner ${res.status}`);
   const data = await res.json();
-  const out: OwnedNft[] = (data?.ownedNfts || []).map((n: any) => ({
-    id: n?.tokenId || n?.id?.tokenId || Math.random().toString(36).slice(2),
-    name: n?.title || n?.raw?.metadata?.name,
-    image: n?.image?.cachedUrl || n?.image?.originalUrl || n?.raw?.metadata?.image || n?.media?.[0]?.gateway,
-    metadata: n?.raw?.metadata || n?.metadata,
-  }));
+  const out: OwnedNft[] = (data?.ownedNfts || []).map((n: any) => {
+    const rawId = n?.tokenId || n?.id?.tokenId || 0;
+    let decId = String(rawId);
+    try { decId = BigInt(rawId).toString(10); } catch {}
+    return {
+      id: decId,
+      name: n?.title || n?.raw?.metadata?.name,
+      image: n?.image?.cachedUrl || n?.image?.originalUrl || n?.raw?.metadata?.image || n?.media?.[0]?.gateway,
+      metadata: n?.raw?.metadata || n?.metadata,
+    };
+  });
   return out;
 }
 
@@ -113,7 +123,7 @@ export default function CollectionPage(){
               <MultiGatewayImg uri={n.image || n.metadata?.image} alt={n.name || String(n.id)} />
             </div>
             <div className="explore-meta">
-              <div className="explore-name">{n.name || `Token #${n.id}`}</div>
+              <div className="explore-name">{(n.name || 'Token') + (n.id ? ` #${n.id}` : '')}</div>
             </div>
           </div>
         ))}
