@@ -114,7 +114,11 @@ const ExplorePage: React.FC = () => {
                   </div>
                 )}
                 <div className="explore-actions">
-                  <button className="btn" onClick={() => onMint(it)} disabled={soldOut || !!buying[it.id] || it.paused}>
+                  <button
+                    className={`btn${soldOut ? ' soldout' : ''}`}
+                    onClick={() => onMint(it)}
+                    disabled={soldOut || !!buying[it.id] || it.paused}
+                  >
                     {soldOut ? 'Sold out' : (buying[it.id] ? 'Minting…' : 'Mint')}
                   </button>
                 </div>
