@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
 import { buyOne, getListingTotalSold } from '../services/marketplaceClient';
 import { useWallet } from '../../../shared/hooks/useWallet';
+import MashupBuilder from '../../../collectors/MashupBuilder';
 
 type ListedDoc = {
   id: string;
@@ -35,6 +36,9 @@ const ExplorePage: React.FC = () => {
   const [buying, setBuying] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
   const [sold, setSold] = useState<Record<string, number>>({});
+  const [assets, setAssets] = useState<Record<string, { image_name: string; image_path: string; enabled: boolean }[]>>({});
+  const [previewFor, setPreviewFor] = useState<string | null>(null);
+  const [previewLayers, setPreviewLayers] = useState<{ image_name: string; image_path: string; enabled: boolean }[]>([]);
 
   useEffect(() => {
     let cancel = false;
@@ -46,14 +50,30 @@ const ExplorePage: React.FC = () => {
         const snap = await getDocs(q);
         const list: ListedDoc[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
         if (!cancel) setItems(list);
-        // hydrate metadata and totalSold
+        // hydrate metadata, assets and totalSold
         for (const it of list) {
           const url = ipfsToHttp(it.tokenURI);
           if (!url) continue;
           try {
             const res = await fetch(url);
             const j = await res.json();
-            if (!cancel) setMeta(m => ({ ...m, [it.id]: { name: j?.name, image: j?.image ? ipfsToHttp(j.image) : undefined } }));
+            if (!cancel) {
+              setMeta(m => ({ ...m, [it.id]: { name: j?.name, image: j?.image ? ipfsToHttp(j.image) : undefined } }));
+              const PREFERRED_ORDER = ['background', 'bottom', 'upper', 'head', 'eyes', 'hat', 'hair', 'left_accessory', 'right_accessory'];
+              const listA: { image_name: string; image_path: string; enabled: boolean }[] = [];
+              const arr: any[] = Array.isArray(j?.assets) ? j.assets : [];
+              const byKey: Record<string, string> = {};
+              for (const a of arr) {
+                const label = String(a?.label || a?.type || 'layer').toLowerCase().replace(/[\s-]+/g, '_');
+                const u = String(a?.uri || a?.image || a?.src || '');
+                if (u) byKey[label] = u;
+              }
+              for (const k of PREFERRED_ORDER) {
+                const u = byKey[k];
+                if (u) listA.push({ image_name: k, image_path: ipfsToHttp(u), enabled: true });
+              }
+              setAssets((old) => ({ ...old, [it.id]: listA }));
+            }
           } catch {}
           // totalSold via marketplace (if we have listingId)
           try {
@@ -87,6 +107,16 @@ const ExplorePage: React.FC = () => {
     }
   };
 
+  const openPreview = (it: ListedDoc) => {
+    const layers = (assets[it.id] || []).map(l => ({ ...l, enabled: true }));
+    setPreviewLayers(layers);
+    setPreviewFor(it.id);
+  };
+
+  const togglePreviewLayer = (name: string) => {
+    setPreviewLayers(prev => prev.map(l => l.image_name === name ? { ...l, enabled: !l.enabled } : l));
+  };
+
   return (
     <div>
       <h2 className="explore-title">Explore Listings</h2>
@@ -101,7 +131,7 @@ const ExplorePage: React.FC = () => {
           const soldOut = typeof max === 'number' && minted >= max;
           return (
             <div key={it.id} className="explore-card tile">
-              <div className="explore-thumb">
+              <div className="explore-thumb" onClick={() => openPreview(it)} title="Preview">
                 <img src={img} alt={name} />
                 <div className="explore-price">{it.priceMatic ?? '0'} MATIC</div>
               </div>
@@ -127,6 +157,27 @@ const ExplorePage: React.FC = () => {
           );
         })}
       </div>
+
+      {previewFor && (
+        <div className="overlay-full" role="dialog" aria-modal="true">
+          <div className="overlay-content">
+            <div className="overlay-left">
+              <MashupBuilder layers={previewLayers} width={420} height={560} background="#ffffff" style={{}} />
+            </div>
+            <div className="overlay-right">
+              <div className="overlay-list">
+                {(assets[previewFor] || []).map((a, i) => (
+                  <div key={a.image_name + i} className={`asset-card${previewLayers.find(l => l.image_name===a.image_name && l.enabled) ? ' active' : ''}`} onClick={() => togglePreviewLayer(a.image_name)}>
+                    <img className="asset-img" src={a.image_path} alt={a.image_name} />
+                    <div className="asset-title">{a.image_name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button className="overlay-close btn secondary" onClick={() => setPreviewFor(null)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

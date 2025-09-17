@@ -86,6 +86,15 @@
 .btn.soldout { background: #9ca3af; color: #fff; }
 .btn.soldout:disabled { opacity: 1; cursor: not-allowed; }
 
+/* Fullscreen overlay preview */
+.overlay-full { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.overlay-content { position: relative; width: min(1100px, 96vw); height: min(86vh, 900px); background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; display: grid; grid-template-columns: 480px 1fr; gap: 12px; padding: 12px; }
+.overlay-left { display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 10px; }
+.overlay-right { overflow: hidden; }
+.overlay-list { height: 100%; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; align-content: start; }
+.overlay-close { position: absolute; top: 10px; right: 10px; }
+.asset-title { padding: 4px 6px; font-size: 12px; color: #374151; text-transform: capitalize; }
+
 /* Collection page */
 .collection-grid {
   display: grid;
