@@ -80,27 +80,36 @@ const ExplorePage: React.FC = () => {
   };
 
   return (
-    <div className="explore-grid">
+    <div>
       <h2 className="explore-title">Explore Listings</h2>
       {err && <div style={{ color: '#b91c1c' }}>Error: {err}</div>}
-      {items.map((it) => (
-        <div key={it.id} className="explore-card">
-          <img src={it.Composite ? ipfsToHttp(it.Composite) : (meta[it.id]?.image || '')} alt={it.id} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div><strong>Artist:</strong> {it['artist-name'] || 'Unknown'}</div>
-            <div><strong>Name:</strong> {meta[it.id]?.name || 'Untitled'}</div>
-            <div><strong>Price:</strong> {it.priceMatic} MATIC</div>
-            <div><strong>Max Supply:</strong> {it.maxSupply ?? '-'}</div>
-            <div>
-              <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id] || it.paused}>
-                {buying[it.id] ? 'Minting…' : 'Mint'}
-              </button>
+      <div className="explore-grid tiles">
+        {items.map((it) => {
+          const img = it.Composite ? ipfsToHttp(it.Composite) : (meta[it.id]?.image || '');
+          const name = meta[it.id]?.name || 'Untitled';
+          const artist = it['artist-name'] || 'Unknown';
+          return (
+            <div key={it.id} className="explore-card tile">
+              <div className="explore-thumb">
+                <img src={img} alt={name} />
+                <div className="explore-price">{it.priceMatic ?? '0'} MATIC</div>
+              </div>
+              <div className="explore-meta">
+                <div className="explore-name" title={name}>{name}</div>
+                <div className="explore-artist" title={artist}>by {artist}</div>
+                <div className="explore-actions">
+                  <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id] || it.paused}>
+                    {buying[it.id] ? 'Minting…' : 'Mint'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 };
 
 export default ExplorePage;
+
