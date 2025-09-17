@@ -47,48 +47,53 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-const FlattenedThumb: React.FC<{ uri?: string; caption?: string }>=({uri, caption})=>{
+async function composeFlattened(uri?: string, caption?: string, W = 800, H = 1200): Promise<string | undefined> {
+  const cands = makeCandidates(uri);
+  for (let i = 0; i < cands.length; i++) {
+    try {
+      const img = await loadImage(cands[i]);
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+      ctx.clearRect(0, 0, W, H);
+      // cover fit (crop overflow)
+      const r = Math.max(W / img.width, H / img.height);
+      const w = Math.round(img.width * r);
+      const h = Math.round(img.height * r);
+      const x = Math.round((W - w) / 2);
+      const y = Math.round((H - h) / 2);
+      ctx.drawImage(img, x, y, w, h);
+      if (caption) {
+        const yText = H - 110; // a bit above bottom
+        ctx.font = '700 56px Roboto, system-ui, -apple-system, Segoe UI, Helvetica, Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.strokeText(caption, W / 2, yText);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(caption, W / 2, yText);
+      }
+      return canvas.toDataURL('image/png');
+    } catch { /* try next */ }
+  }
+  return undefined;
+}
+
+const FlattenedThumb: React.FC<{ uri?: string; caption?: string; onClick?: (url?: string)=>void }>=({uri, caption, onClick})=>{
   const [dataUrl,setDataUrl]=useState<string|undefined>();
-  const cands = React.useMemo(()=>makeCandidates(uri),[uri]);
   useEffect(()=>{
     let cancel=false;
     (async()=>{
-      for(let i=0;i<cands.length;i++){
-        try{
-          const img=await loadImage(cands[i]);
-          const W=800, H=1200; // portrait similar to card ratio
-          const canvas=document.createElement('canvas');
-          canvas.width=W; canvas.height=H;
-          const ctx=canvas.getContext('2d')!;
-          ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
-          const r=Math.min(W/img.width, H/img.height);
-          const w=Math.round(img.width*r); const h=Math.round(img.height*r);
-          const x=Math.round((W-w)/2); const y=Math.round((H-h)/2);
-          ctx.drawImage(img,x,y,w,h);
-          if(caption){
-            // Draw caption only (transparent background), centered and a bit above the bottom
-            const y = H - 110; // move a little up from bottom
-            ctx.font='700 56px Roboto, system-ui, -apple-system, Segoe UI, Helvetica, Arial';
-            ctx.textAlign='center';
-            ctx.textBaseline='middle';
-            // subtle outline for readability on mixed backgrounds
-            ctx.lineWidth = 8;
-            ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-            ctx.strokeText(caption, W/2, y);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(caption, W/2, y);
-          }
-          const url=canvas.toDataURL('image/png');
-          if(!cancel) setDataUrl(url);
-          return;
-        }catch{ /* try next gateway */ }
-      }
+      const url = await composeFlattened(uri, caption, 800, 1200);
+      if(!cancel) setDataUrl(url);
     })();
     return ()=>{ cancel=true };
-  },[cands, caption]);
-  return dataUrl
-    ? <img src={dataUrl} alt={caption} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain' }} />
+  },[uri, caption]);
+  const imgEl = dataUrl
+    ? <img src={dataUrl} alt={caption} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
     : <MultiGatewayImg uri={uri} alt={caption} />;
+  return <div onClick={async()=>{ if(onClick){ const big = await composeFlattened(uri, caption, 1200, 1800); onClick(big||dataUrl); } }} style={{ position:'absolute', inset:0, cursor:'zoom-in' }}>{imgEl}</div>;
 };
 
 async function fetchOwnedAll({ apiKey, owner }: { apiKey?: string; owner: string; }) {
@@ -142,6 +147,7 @@ export default function CollectionPage(){
   const { connected, address, connect } = useWallet();
   const [items,setItems]=useState<OwnedNft[]>([]);
   const [err,setErr]=useState<string|null>(null);
+  const [preview,setPreview]=useState<string>("");
 
   useEffect(()=>{
     let cancel=false;
@@ -174,7 +180,7 @@ export default function CollectionPage(){
         {items.map(n=> (
           <div key={n.id} className="explore-card tile">
             <div className="explore-thumb">
-              <FlattenedThumb uri={n.image || n.metadata?.image} caption={(n.name || 'Token') + (n.id ? ` #${n.id}` : '')} />
+              <FlattenedThumb uri={n.image || n.metadata?.image} caption={(n.name || 'Token') + (n.id ? ` #${n.id}` : '')} onClick={(url)=>setPreview(url||'')} />
             </div>
             <div className="explore-meta">
               <div className="explore-name">&nbsp;</div>
@@ -183,6 +189,15 @@ export default function CollectionPage(){
         ))}
       </div>
       {items.length===0 && (<div style={{ color: '#6b7280', marginTop: 8 }}>No NFTs found for this wallet.</div>)}
+
+      {preview && (
+        <div className="overlay-full" role="dialog" aria-modal="true" onClick={()=>setPreview('')}>
+          <div style={{ position:'relative', maxWidth:'90vw', maxHeight:'90vh' }}>
+            <img src={preview} alt="preview" style={{ display:'block', maxWidth:'90vw', maxHeight:'90vh' }} />
+            <button className="overlay-close btn secondary" onClick={()=>setPreview('')}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
