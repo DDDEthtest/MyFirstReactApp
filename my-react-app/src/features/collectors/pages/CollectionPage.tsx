@@ -37,6 +37,60 @@ const MultiGatewayImg: React.FC<{ uri?: string; alt?: string }>=({uri,alt})=>{
   return <img src={src} alt={alt} onError={()=>setIdx(i=>Math.min(i+1,cands.length-1))} referrerPolicy="no-referrer"/>;
 };
 
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+const FlattenedThumb: React.FC<{ uri?: string; caption?: string }>=({uri, caption})=>{
+  const [dataUrl,setDataUrl]=useState<string|undefined>();
+  const cands = React.useMemo(()=>makeCandidates(uri),[uri]);
+  useEffect(()=>{
+    let cancel=false;
+    (async()=>{
+      for(let i=0;i<cands.length;i++){
+        try{
+          const img=await loadImage(cands[i]);
+          const W=800, H=1200; // portrait similar to card ratio
+          const canvas=document.createElement('canvas');
+          canvas.width=W; canvas.height=H;
+          const ctx=canvas.getContext('2d')!;
+          ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+          const r=Math.min(W/img.width, H/img.height);
+          const w=Math.round(img.width*r); const h=Math.round(img.height*r);
+          const x=Math.round((W-w)/2); const y=Math.round((H-h)/2);
+          ctx.drawImage(img,x,y,w,h);
+          if(caption){
+            const barH=80, pad=20;
+            ctx.fillStyle='rgba(17,24,39,0.55)';
+            ctx.fillRect(0,H-barH,W,barH);
+            ctx.fillStyle='#ffffff';
+            ctx.font='600 40px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+            ctx.textBaseline='middle';
+            // Clip to keep text within
+            ctx.save();
+            ctx.beginPath(); ctx.rect(pad, H-barH/2-24, W-2*pad, 48); ctx.clip();
+            ctx.fillText(caption, pad, H - barH/2);
+            ctx.restore();
+          }
+          const url=canvas.toDataURL('image/png');
+          if(!cancel) setDataUrl(url);
+          return;
+        }catch{ /* try next gateway */ }
+      }
+    })();
+    return ()=>{ cancel=true };
+  },[cands, caption]);
+  return dataUrl
+    ? <img src={dataUrl} alt={caption} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain' }} />
+    : <MultiGatewayImg uri={uri} alt={caption} />;
+};
+
 async function fetchOwnedAll({ apiKey, owner }: { apiKey?: string; owner: string; }) {
   const key = apiKey || (process.env.REACT_APP_ALCHEMY_API_KEY as string);
   if (!key) throw new Error('Missing REACT_APP_ALCHEMY_API_KEY for collection');
@@ -120,8 +174,7 @@ export default function CollectionPage(){
         {items.map(n=> (
           <div key={n.id} className="explore-card tile">
             <div className="explore-thumb">
-              <MultiGatewayImg uri={n.image || n.metadata?.image} alt={n.name || String(n.id)} />
-              <div className="thumb-caption">{(n.name || 'Token') + (n.id ? ` #${n.id}` : '')}</div>
+              <FlattenedThumb uri={n.image || n.metadata?.image} caption={(n.name || 'Token') + (n.id ? ` #${n.id}` : '')} />
             </div>
             <div className="explore-meta">
               <div className="explore-name">&nbsp;</div>
