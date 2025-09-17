@@ -121,9 +121,10 @@ export default function CollectionPage(){
           <div key={n.id} className="explore-card tile">
             <div className="explore-thumb">
               <MultiGatewayImg uri={n.image || n.metadata?.image} alt={n.name || String(n.id)} />
+              <div className="thumb-caption">{(n.name || 'Token') + (n.id ? ` #${n.id}` : '')}</div>
             </div>
             <div className="explore-meta">
-              <div className="explore-name">{(n.name || 'Token') + (n.id ? ` #${n.id}` : '')}</div>
+              <div className="explore-name">&nbsp;</div>
             </div>
           </div>
         ))}
