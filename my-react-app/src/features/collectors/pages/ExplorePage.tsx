@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
-import { buyOne } from '../services/marketplaceClient';
+import { buyOne, getListingTotalSold } from '../services/marketplaceClient';
 import { useWallet } from '../../../shared/hooks/useWallet';
 
 type ListedDoc = {
@@ -34,6 +34,7 @@ const ExplorePage: React.FC = () => {
   const [meta, setMeta] = useState<Record<string, TokenMeta>>({});
   const [buying, setBuying] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
+  const [sold, setSold] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let cancel = false;
@@ -45,7 +46,7 @@ const ExplorePage: React.FC = () => {
         const snap = await getDocs(q);
         const list: ListedDoc[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
         if (!cancel) setItems(list);
-        // hydrate metadata
+        // hydrate metadata and totalSold
         for (const it of list) {
           const url = ipfsToHttp(it.tokenURI);
           if (!url) continue;
@@ -53,6 +54,13 @@ const ExplorePage: React.FC = () => {
             const res = await fetch(url);
             const j = await res.json();
             if (!cancel) setMeta(m => ({ ...m, [it.id]: { name: j?.name, image: j?.image ? ipfsToHttp(j.image) : undefined } }));
+          } catch {}
+          // totalSold via marketplace (if we have listingId)
+          try {
+            if (it.listingId) {
+              const n = await getListingTotalSold(it.listingId);
+              if (!cancel) setSold((s) => ({ ...s, [it.id]: n }));
+            }
           } catch {}
         }
       } catch (e: any) {
@@ -97,6 +105,11 @@ const ExplorePage: React.FC = () => {
               <div className="explore-meta">
                 <div className="explore-name" title={name}>{name}</div>
                 <div className="explore-artist" title={artist}>by {artist}</div>
+                {(it.maxSupply || sold[it.id] !== undefined) && (
+                  <div className="explore-artist" title="Total minted">
+                    Total minted: {sold[it.id] ?? 0}{typeof it.maxSupply === 'number' ? ` / ${it.maxSupply}` : ''}
+                  </div>
+                )}
                 <div className="explore-actions">
                   <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id] || it.paused}>
                     {buying[it.id] ? 'Minting…' : 'Mint'}
@@ -112,4 +125,3 @@ const ExplorePage: React.FC = () => {
 };
 
 export default ExplorePage;
-

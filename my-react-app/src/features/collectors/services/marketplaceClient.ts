@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, parseEther } from 'ethers';
+import { BrowserProvider, Contract, JsonRpcProvider, parseEther } from 'ethers';
 
 const MARKETPLACE_ABI = [
   'function listings(uint256) view returns (tuple(address artist,address currency,uint256 price,uint64 maxSupply,uint64 totalSold,uint64 start,uint64 end,uint32 maxPerWallet,uint64 defaultAssetId,bytes32 merkleRoot,bool active))',
@@ -49,4 +49,22 @@ export async function buyOne(listingId: bigint, priceMatic: string, recipient?: 
   const value = parseEther(priceMatic);
   const tx = await marketplace.buy(listingId, 1n, to, { value });
   return tx.wait();
+}
+
+// Lightweight read-only access without requiring a wallet connection
+export async function getMarketplaceRead() {
+  const rpc = String(process.env.REACT_APP_RPC_URL || 'https://polygon-rpc.com');
+  const provider = new JsonRpcProvider(rpc);
+  const marketplaceAddr = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
+  if (!marketplaceAddr) throw new Error('Missing REACT_APP_MARKETPLACE_ADDRESS');
+  const marketplace = new Contract(marketplaceAddr, MARKETPLACE_ABI, provider);
+  return { provider, marketplace };
+}
+
+export async function getListingTotalSold(listingId: bigint | string) {
+  const { marketplace } = await getMarketplaceRead();
+  const id = typeof listingId === 'string' ? BigInt(listingId) : listingId;
+  const info = await marketplace.listings(id);
+  // totalSold is uint64 in the ABI; return as number for UI
+  try { return Number(info.totalSold); } catch { return 0; }
 }
