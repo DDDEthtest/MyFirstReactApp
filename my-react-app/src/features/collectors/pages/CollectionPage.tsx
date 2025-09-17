@@ -55,6 +55,25 @@ async function fetchOwnedAll({ apiKey, owner }: { apiKey?: string; owner: string
   return out;
 }
 
+async function fetchOwnedByContract({ apiKey, owner, contract }: { apiKey?: string; owner: string; contract: string; }) {
+  const key = apiKey || (process.env.REACT_APP_ALCHEMY_API_KEY as string);
+  if (!key) throw new Error('Missing REACT_APP_ALCHEMY_API_KEY for collection');
+  const base = `https://polygon-mainnet.g.alchemy.com/nft/v3/${key}`;
+  const params = new URLSearchParams({ owner, withMetadata: 'true' });
+  if (contract) params.append('contractAddresses[]', contract);
+  const url = `${base}/getNFTsForOwner?${params.toString()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Alchemy getNFTsForOwner ${res.status}`);
+  const data = await res.json();
+  const out: OwnedNft[] = (data?.ownedNfts || []).map((n: any) => ({
+    id: n?.tokenId || n?.id?.tokenId || Math.random().toString(36).slice(2),
+    name: n?.title || n?.raw?.metadata?.name,
+    image: n?.image?.cachedUrl || n?.image?.originalUrl || n?.raw?.metadata?.image || n?.media?.[0]?.gateway,
+    metadata: n?.raw?.metadata || n?.metadata,
+  }));
+  return out;
+}
+
 export default function CollectionPage(){
   const { connected, address, connect } = useWallet();
   const [items,setItems]=useState<OwnedNft[]>([]);
@@ -66,7 +85,10 @@ export default function CollectionPage(){
       if(!connected||!address) return;
       try{
         setErr(null);
-        const list=await fetchOwnedAll({ owner: address });
+        const contract = String(process.env.REACT_APP_COLLECTION_ADDRESS || '').trim();
+        const list = contract
+          ? await fetchOwnedByContract({ owner: address, contract })
+          : await fetchOwnedAll({ owner: address });
         if(!cancel) setItems(list);
       }catch(e:any){ if(!cancel) setErr(e?.message||String(e)); }
     })();
