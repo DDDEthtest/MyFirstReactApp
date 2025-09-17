@@ -182,9 +182,6 @@ export default function CollectionPage(){
             <div className="explore-thumb">
               <FlattenedThumb uri={n.image || n.metadata?.image} caption={(n.name || 'Token') + (n.id ? ` #${n.id}` : '')} onClick={(url)=>setPreview(url||'')} />
             </div>
-            <div className="explore-meta">
-              <div className="explore-name">&nbsp;</div>
-            </div>
           </div>
         ))}
       </div>
