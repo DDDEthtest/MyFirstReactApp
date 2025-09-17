@@ -96,6 +96,9 @@ const ExplorePage: React.FC = () => {
           const img = it.Composite ? ipfsToHttp(it.Composite) : (meta[it.id]?.image || '');
           const name = meta[it.id]?.name || 'Untitled';
           const artist = it['artist-name'] || 'Unknown';
+          const minted = sold[it.id] ?? 0;
+          const max = typeof it.maxSupply === 'number' ? it.maxSupply : undefined;
+          const soldOut = typeof max === 'number' && minted >= max;
           return (
             <div key={it.id} className="explore-card tile">
               <div className="explore-thumb">
@@ -105,14 +108,14 @@ const ExplorePage: React.FC = () => {
               <div className="explore-meta">
                 <div className="explore-name" title={name}>{name}</div>
                 <div className="explore-artist" title={artist}>by {artist}</div>
-                {(it.maxSupply || sold[it.id] !== undefined) && (
+                {(max !== undefined || sold[it.id] !== undefined) && (
                   <div className="explore-artist" title="Total minted">
-                    Total minted: {sold[it.id] ?? 0}{typeof it.maxSupply === 'number' ? ` / ${it.maxSupply}` : ''}
+                    Total minted: {minted}{max !== undefined ? ` / ${max}` : ''}
                   </div>
                 )}
                 <div className="explore-actions">
-                  <button className="btn" onClick={() => onMint(it)} disabled={!!buying[it.id] || it.paused}>
-                    {buying[it.id] ? 'Minting…' : 'Mint'}
+                  <button className="btn" onClick={() => onMint(it)} disabled={soldOut || !!buying[it.id] || it.paused}>
+                    {soldOut ? 'Sold out' : (buying[it.id] ? 'Minting…' : 'Mint')}
                   </button>
                 </div>
               </div>
