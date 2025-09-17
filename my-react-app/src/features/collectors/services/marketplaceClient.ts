@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, JsonRpcProvider, parseEther } from 'ethers';
+import { BrowserProvider, Contract, JsonRpcProvider, Interface, parseEther } from 'ethers';
 
 const MARKETPLACE_ABI = [
   'function listings(uint256) view returns (tuple(address artist,address currency,uint256 price,uint64 maxSupply,uint64 totalSold,uint64 start,uint64 end,uint32 maxPerWallet,uint64 defaultAssetId,bytes32 merkleRoot,bool active))',
@@ -49,6 +49,30 @@ export async function buyOne(listingId: bigint, priceMatic: string, recipient?: 
   const value = parseEther(priceMatic);
   const tx = await marketplace.buy(listingId, 1n, to, { value });
   return tx.wait();
+}
+
+// Buy 1 and parse the collection's Minted(tokenId,to,listingId) event from the receipt
+export async function buyOneReturnTokenIds(listingId: bigint, priceMatic: string, recipient?: string) {
+  const { signer, marketplace } = await getSignerAndContracts();
+  const to = recipient || await signer.getAddress();
+  const value = parseEther(priceMatic);
+  const tx = await marketplace.buy(listingId, 1n, to, { value });
+  const receipt = await tx.wait();
+
+  const collectionAddr = String(process.env.REACT_APP_COLLECTION_ADDRESS || '').toLowerCase();
+  const iface = new Interface(['event Minted(uint256 indexed tokenId, address indexed to, uint256 indexed listingId)']);
+  const tokenIds: string[] = [];
+  for (const log of receipt.logs || []) {
+    try {
+      if (collectionAddr && String(log.address || '').toLowerCase() !== collectionAddr) continue;
+      const parsed = iface.parseLog(log);
+      if (parsed?.name === 'Minted') {
+        const tid = (parsed.args[0] as bigint).toString();
+        tokenIds.push(tid);
+      }
+    } catch {}
+  }
+  return { receipt, tokenIds };
 }
 
 // Lightweight read-only access without requiring a wallet connection

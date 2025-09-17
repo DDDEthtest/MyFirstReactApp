@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
-import { buyOne, getListingTotalSold } from '../services/marketplaceClient';
+import { buyOne, buyOneReturnTokenIds, getListingTotalSold } from '../services/marketplaceClient';
 import { useWallet } from '../../../shared/hooks/useWallet';
 import MashupBuilder from '../../../collectors/MashupBuilder';
 
@@ -97,8 +97,20 @@ const ExplorePage: React.FC = () => {
       const id = BigInt(it.listingId || '0');
       if (!id) throw new Error('Missing listingId');
       const price = String(it.priceMatic || '0');
-      await buyOne(id, price);
-      alert('Minted 1 successfully');
+      const { tokenIds } = await buyOneReturnTokenIds(id, price);
+      const name = meta[it.id]?.name || 'Untitled';
+      if (tokenIds && tokenIds.length > 0) {
+        alert(`Minted ${name} #${tokenIds[0]}`);
+      } else {
+        alert(`Minted 1: ${name}`);
+      }
+      // optimistic refresh of totalSold
+      try {
+        if (it.listingId) {
+          const n = await getListingTotalSold(it.listingId);
+          setSold((s) => ({ ...s, [it.id]: n }));
+        }
+      } catch {}
     } catch (e: any) {
       const msg = e?.shortMessage || e?.reason || e?.message || String(e);
       alert('Mint failed: ' + msg);
