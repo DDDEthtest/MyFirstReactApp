@@ -39,7 +39,7 @@ const CollectorLayout: React.FC = () => {
           <div className="collectors-container hdr">
             <div className="hdr-left">
               <Link to={ROUTES.collectors} className="brand" aria-label="Home">
-                <img src={`${process.env.PUBLIC_URL}/img/logo_s.gif`} alt="Logo" className="brand-logo" />
+                <img src={`${process.env.PUBLIC_URL}/img/logo_s.gif?v=${process.env.REACT_APP_BUILD_ID || ''}`} alt="Logo" className="brand-logo" />
               </Link>
               <NavLink to={ROUTES.collectors} label="Explore" />
               <NavLink to={ROUTES.collectorsCollection} label="Collection" />
