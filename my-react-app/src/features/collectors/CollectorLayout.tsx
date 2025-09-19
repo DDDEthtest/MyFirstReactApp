@@ -34,11 +34,13 @@ const WalletBadge: React.FC = () => {
 const CollectorLayout: React.FC = () => {
   return (
     <WalletProvider>
-      <div>
+      <div className="collectors-root">
         <header className="collectors-header">
           <div className="collectors-container hdr">
             <div className="hdr-left">
-              <Link to={ROUTES.collectors} className="brand">Collector Portal</Link>
+              <Link to={ROUTES.collectors} className="brand" aria-label="Home">
+                <img src={`${process.env.PUBLIC_URL}/img/logo_s.gif`} alt="Logo" className="brand-logo" />
+              </Link>
               <NavLink to={ROUTES.collectors} label="Explore" />
               <NavLink to={ROUTES.collectorsCollection} label="Collection" />
               <NavLink to={ROUTES.collectorsMashup} label="Mashup" />
