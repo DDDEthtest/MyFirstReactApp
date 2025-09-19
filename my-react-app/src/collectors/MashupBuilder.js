@@ -157,7 +157,7 @@ export default function MashupBuilder({
       position: 'relative',
       borderRadius: 10,
       border: '1px solid #ddd',
-      background: background || '#fff',
+      background: background || '#E5E4E2',
       boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
       ...style,
     }}>

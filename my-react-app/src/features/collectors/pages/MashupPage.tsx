@@ -101,7 +101,7 @@ const MashupPage: React.FC = () => {
   const [owned, setOwned] = useState<OwnedNft[]>([]);
   const [active, setActive] = useState<string>('collectibles');
   const collectionAddr = String(process.env.REACT_APP_COLLECTION_ADDRESS || '').trim();
-  const PLACEHOLDER_COUNT = 30; // for UX scroll testing
+  const PLACEHOLDER_COUNT = 0; // disable placeholders in the grid
   const [vw, setVw] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 0);
   const [vh, setVh] = useState<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
   const [headerH, setHeaderH] = useState<number>(64);
@@ -384,12 +384,6 @@ const MashupPage: React.FC = () => {
                 <MultiGatewayImg className="thumb-img" uri={n.image} alt={n.name || String(n.id)} />
               </div>
             ))}
-            {/* Placeholders for UX/scroll behavior preview */}
-              {Array.from({ length: PLACEHOLDER_COUNT }).map((_, i) => (
-                <div key={`ph-${i}`} className="thumb-card placeholder">
-                  <div className="thumb-img placeholder" />
-                </div>
-              ))}
             {owned.length === 0 && (
               <div style={{ color: '#6b7280' }}>
                 {collectionAddr ? 'No collectibles from this collection found for this wallet.' : 'No collectibles found for this wallet.'}
@@ -417,7 +411,7 @@ const ColorSwatchButton: React.FC<{ color: string; title?: string; onClick?: () 
       onClick={onClick}
       title={title}
       style={{
-        width: 44, height: 44, borderRadius: 12, border: '1px solid #1f2937', background: '#111827', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+        width: 44, height: 44, borderRadius: 12, border: '1px solid #1f2937', background: '#7f7f7f', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
       }}
     >
       <span style={{ display: 'inline-block', width: 26, height: 26, borderRadius: 8, background: color, boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.25)' }} />
