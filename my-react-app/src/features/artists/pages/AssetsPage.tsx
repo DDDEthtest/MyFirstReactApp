@@ -4,6 +4,7 @@ import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/fire
 import { db } from '../../../shared/lib/firebase';
 import { BrowserProvider, Contract, Interface, ZeroAddress, parseEther, keccak256, toUtf8Bytes } from 'ethers';
 import { ipfsClient } from '../services/ipfsClient';
+import { getListingTotalSold } from '../../collectors/services/marketplaceClient';
 
 type Listing = {
   id: string;
@@ -44,10 +45,12 @@ const AssetsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<number>(0);
   // Per-item listing form state for approved items
-  const [formState, setFormState] = useState<Record<string, { maxSupply?: string; price?: string }>>({});
+  const [formState, setFormState] = useState<Record<string, { maxSupply?: string; price?: string; baseURI?: string }>>({});
   const [pending, setPending] = useState<Record<string, boolean>>({});
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [minted, setMinted] = useState<Record<string, number>>({});
 
-  const updateForm = (id: string, patch: Partial<{ maxSupply: string; price: string }>) => {
+  const updateForm = (id: string, patch: Partial<{ maxSupply: string; price: string; baseURI: string }>) => {
     setFormState((s) => ({ ...s, [id]: { ...(s[id] || {}), ...patch } }));
   };
 
@@ -65,7 +68,33 @@ const AssetsPage: React.FC = () => {
         const q = query(col, where('artist-wallet', '==', normalized));
         const snap = await getDocs(q);
         const got: Listing[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-        if (!cancelled) setItems(got);
+        // Show only relevant items for the currently configured marketplace/chain.
+        // Keep any non-listed submissions visible so the artist can list them.
+        const activeMarketplace = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
+        const activeChainId = Number(process.env.REACT_APP_CHAIN_ID || '137');
+        const filtered = got.filter((it: any) => {
+          if (it?.status !== 'listed') return true; // keep drafts/approved
+          return it?.marketplace === activeMarketplace && Number(it?.chainId) === activeChainId;
+        });
+        if (!cancelled) setItems(filtered);
+        // Hydrate name + minted for listed items
+        for (const it of filtered) {
+          try {
+            const anyIt: any = it as any;
+            if (anyIt.tokenURI) {
+              const res = await fetch(toGateway(anyIt.tokenURI));
+              const j = await res.json();
+              if (!cancelled) setNames((m) => ({ ...m, [it.id]: j?.name || 'Untitled' }));
+            }
+          } catch {}
+          try {
+            const lid = (it as any).listingId;
+            if (lid) {
+              const n = await getListingTotalSold(lid);
+              if (!cancelled) setMinted((m) => ({ ...m, [it.id]: n }));
+            }
+          } catch {}
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || String(e));
       } finally {
@@ -91,7 +120,8 @@ const AssetsPage: React.FC = () => {
   // Minimal ABIs
   const MARKETPLACE_ABI = [
     'event ListingCreated(uint256 indexed listingId, (address artist,address currency,uint256 price,uint64 maxSupply,uint64 totalSold,uint64 start,uint64 end,uint32 maxPerWallet,uint64 defaultAssetId,bytes32 merkleRoot,bool active) data)',
-    'function createListing((address artist,address currency,uint256 price,uint64 maxSupply,uint64 totalSold,uint64 start,uint64 end,uint32 maxPerWallet,uint64 defaultAssetId,bytes32 merkleRoot,bool active) in_) returns (uint256 listingId)'
+    'function createListing((address artist,address currency,uint256 price,uint64 maxSupply,uint64 totalSold,uint64 start,uint64 end,uint32 maxPerWallet,uint64 defaultAssetId,bytes32 merkleRoot,bool active) in_) returns (uint256 listingId)',
+    'function setListingBaseURI(uint256 listingId, string baseURI)'
   ];
   const COLLECTION_ABI = [
     'function assetExists(uint256 assetId) view returns (bool)',
@@ -235,6 +265,37 @@ const AssetsPage: React.FC = () => {
         }
       } catch {}
 
+      // Auto-generate per-edition JSONs and set baseURI on-chain for edition-safe minting
+      // Build base metadata from the tokenURI JSON (already uploaded above)
+      try {
+        const baseUrl = tokenURI.startsWith('ipfs://') ? `https://ipfs.filebase.io/ipfs/${tokenURI.slice(7)}` : tokenURI;
+        const res = await fetch(baseUrl);
+        const baseJson: any = await res.json();
+        const baseName = (baseJson?.name || it['artist-name'] || it.id || 'Untitled').toString();
+        const files: { path: string; obj: unknown }[] = [];
+        for (let i = 1; i <= maxSupply; i++) {
+          const per = {
+            ...baseJson,
+            name: `${baseName} #${i}`,
+            attributes: [
+              ...(Array.isArray(baseJson?.attributes) ? baseJson.attributes : []),
+              { trait_type: 'Edition', value: i },
+              { trait_type: 'Max Supply', value: maxSupply },
+            ],
+          };
+          files.push({ path: `${i}.json`, obj: per });
+        }
+        const dir = await ipfsClient.uploadJSONDirectory(files);
+        if (listingId) {
+          await (await marketplace.setListingBaseURI(BigInt(listingId), dir.uri)).wait();
+        }
+        // store baseURI in Firestore
+        const ref1 = doc(db, 'NFT-listings', it.id);
+        await updateDoc(ref1, { baseURI: dir.uri });
+      } catch (e) {
+        console.warn('Failed to generate/set baseURI automatically', e);
+      }
+
       // Update Firestore doc
       const ref = doc(db, 'NFT-listings', it.id);
       await updateDoc(ref, {
@@ -244,6 +305,9 @@ const AssetsPage: React.FC = () => {
         assetId: assetId.toString(),
         tokenURI,
         listingId: listingId || null,
+        // Tag docs so the Explore page can filter to the active marketplace/chain
+        marketplace: marketplaceAddr,
+        chainId: Number(process.env.REACT_APP_CHAIN_ID || '137'),
       });
 
       alert(`Listed successfully${listingId ? ' (ID ' + listingId + ')' : ''}`);
@@ -258,6 +322,49 @@ const AssetsPage: React.FC = () => {
     }
   };
 
+  // Set or update the on-chain baseURI for edition-safe minting
+  const setBaseURIForListing = async (it: Listing) => {
+    const base = (formState[it.id]?.baseURI || '').trim();
+    const listingId = it as any as { listingId?: string };
+    const lid = listingId?.listingId ? BigInt(listingId.listingId) : null;
+    if (!lid) { alert('Listing ID missing. Create the listing first.'); return; }
+    if (!base) { alert('Please enter a baseURI (ipfs://CID or https URL)'); return; }
+
+    try {
+      setPending((p) => ({ ...p, [it.id + ':base']: true }));
+
+      const eth = (window as any)?.ethereum;
+      if (!eth?.request) throw new Error('No wallet provider found');
+      let provider = new BrowserProvider(eth);
+      const marketplaceAddr = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
+      if (!marketplaceAddr) throw new Error('Missing REACT_APP_MARKETPLACE_ADDRESS');
+
+      // Ensure network
+      const targetId = Number(process.env.REACT_APP_CHAIN_ID || '137');
+      const targetHex = '0x' + targetId.toString(16);
+      let net = await provider.getNetwork();
+      if (Number(net.chainId) !== targetId) {
+        try { await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: targetHex }] }); } catch {}
+        await new Promise((r) => setTimeout(r, 300));
+        provider = new BrowserProvider(eth);
+      }
+
+      const signer = await provider.getSigner();
+      const marketplace = new Contract(marketplaceAddr, MARKETPLACE_ABI, signer);
+      await (await marketplace.setListingBaseURI(lid, base)).wait();
+
+      // Persist in Firestore for convenience
+      const ref = doc(db, 'NFT-listings', it.id);
+      await updateDoc(ref, { baseURI: base });
+      alert('Base URI set successfully');
+    } catch (e: any) {
+      const msg = e?.shortMessage || e?.reason || e?.message || String(e);
+      alert('Set baseURI failed: ' + msg);
+    } finally {
+      setPending((p) => ({ ...p, [it.id + ':base']: false }));
+    }
+  };
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 24 }}>
       {/* Left: vertical carousel of submissions */}
@@ -268,6 +375,13 @@ const AssetsPage: React.FC = () => {
             <img src={toGateway(it.Composite)} alt={`listing-${idx}`} style={thumbStyle} onClick={() => setSelected(idx)} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ fontWeight: 600, fontSize: 14 }}>Status: {it.status || '—'}</div>
+
+              {it.status === 'listed' && (
+                <>
+                  <div style={{ fontSize: 14 }}><strong>Name:</strong> {names[it.id] || '—'}</div>
+                  <div style={{ fontSize: 14 }}><strong>Supply / minted:</strong> {(it as any)?.maxSupply ?? '—'} / {minted[it.id] ?? 0}</div>
+                </>
+              )}
 
               {it.status === 'approved' && (
                 <>
@@ -300,6 +414,8 @@ const AssetsPage: React.FC = () => {
               {it.status === 'active' && (
                 <button className="btn" onClick={() => alert('Listing to blockchain not implemented yet')}>List into the Blockchain</button>
               )}
+
+              {/* Base URI is now auto-generated during listing; no manual fields needed. */}
 
               {it.status === 'approved' && (() => {
                 const fs = formState[it.id] || {};

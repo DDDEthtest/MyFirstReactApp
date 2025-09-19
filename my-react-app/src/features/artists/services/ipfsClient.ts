@@ -10,14 +10,15 @@ function getFilebaseToken() {
   return token;
 }
 
-async function addViaFilebase(file: File | Blob, name?: string): Promise<UploadResult> {
+async function addViaFilebase(file: File | Blob, name?: string, extraQuery: string = ""): Promise<UploadResult> {
   const token = getFilebaseToken();
   const form = new FormData();
   // Ensure we pass a filename so gateways display a sensible name when saving
   const asFile = file instanceof File ? file : new File([file], name || 'upload.bin', { type: (file as Blob).type || 'application/octet-stream' });
   form.append('file', asFile);
 
-  const res = await fetch(FILEBASE_RPC_ADD, {
+  const url = extraQuery ? `${FILEBASE_RPC_ADD}&${extraQuery}` : FILEBASE_RPC_ADD;
+  const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
@@ -59,4 +60,30 @@ export const ipfsClient = {
     const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
     return addViaFilebase(blob, 'metadata.json');
   },
+
+  async uploadJSONDirectory(files: { path: string; obj: unknown }[]): Promise<UploadResult> {
+    const token = getFilebaseToken();
+    const form = new FormData();
+    for (const f of files) {
+      const blob = new Blob([JSON.stringify(f.obj)], { type: 'application/json' });
+      const file = new File([blob], f.path, { type: 'application/json' });
+      // Multiple 'file' parts; IPFS will honor the provided names
+      form.append('file', file);
+    }
+    // wrap-with-directory returns a root directory CID as the last JSON line
+    const res = await fetch(`${FILEBASE_RPC_ADD}&wrap-with-directory=true`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const txt = await res.text();
+    if (!res.ok) throw new Error(txt || res.statusText);
+    const lines = txt.split(/\r?\n/).filter(Boolean);
+    const last = lines[lines.length - 1];
+    let parsed: any;
+    try { parsed = JSON.parse(last); } catch {}
+    const cid = parsed?.Hash || parsed?.Cid || parsed?.value?.cid;
+    if (!cid) throw new Error('CID missing in directory add response');
+    return { cid, uri: `ipfs://${cid}` };
+  }
 };

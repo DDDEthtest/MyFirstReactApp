@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
-import { buyOne, buyOneReturnTokenIds, getListingTotalSold } from '../services/marketplaceClient';
+import { buyOneAutoURI, getListingTotalSold } from '../services/marketplaceClient';
 import { useWallet } from '../../../shared/hooks/useWallet';
 import MashupBuilder from '../../../collectors/MashupBuilder';
 
@@ -46,7 +46,15 @@ const ExplorePage: React.FC = () => {
       try {
         setErr(null);
         const col = collection(db, 'NFT-listings');
-        const q = query(col, where('status', '==', 'listed'));
+        const activeMarketplace = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
+        const activeChainId = Number(process.env.REACT_APP_CHAIN_ID || '137');
+        // Filter to the current marketplace + chain to avoid showing stale listings
+        const q = query(
+          col,
+          where('status', '==', 'listed'),
+          where('marketplace', '==', activeMarketplace),
+          where('chainId', '==', activeChainId)
+        );
         const snap = await getDocs(q);
         const list: ListedDoc[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
         if (!cancel) setItems(list);
@@ -97,13 +105,9 @@ const ExplorePage: React.FC = () => {
       const id = BigInt(it.listingId || '0');
       if (!id) throw new Error('Missing listingId');
       const price = String(it.priceMatic || '0');
-      const { tokenIds } = await buyOneReturnTokenIds(id, price);
-      const name = meta[it.id]?.name || 'Untitled';
-      if (tokenIds && tokenIds.length > 0) {
-        alert(`Minted ${name} #${tokenIds[0]}`);
-      } else {
-        alert(`Minted 1: ${name}`);
-      }
+      await buyOneAutoURI(id, price);
+      alert('Minted 1 successfully');
+
       // optimistic refresh of totalSold
       try {
         if (it.listingId) {
@@ -207,3 +211,4 @@ const ExplorePage: React.FC = () => {
 };
 
 export default ExplorePage;
+

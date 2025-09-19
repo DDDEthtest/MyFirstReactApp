@@ -3,6 +3,9 @@ import { BrowserProvider, Contract, JsonRpcProvider, Interface, parseEther } fro
 const MARKETPLACE_ABI = [
   'function listings(uint256) view returns (tuple(address artist,address currency,uint256 price,uint64 maxSupply,uint64 totalSold,uint64 start,uint64 end,uint32 maxPerWallet,uint64 defaultAssetId,bytes32 merkleRoot,bool active))',
   'function buy(uint256 listingId, uint256 qty, address recipient) payable',
+  'function buyWithCustomURIs(uint256 listingId, uint256 qty, address recipient, string[] uris) payable',
+  'function buyAutoURI(uint256 listingId, uint256 qty, address recipient) payable',
+  'function setListingBaseURI(uint256 listingId, string baseURI)'
 ];
 
 export async function getSignerAndContracts() {
@@ -48,6 +51,31 @@ export async function buyOne(listingId: bigint, priceMatic: string, recipient?: 
   const to = recipient || await signer.getAddress();
   const value = parseEther(priceMatic);
   const tx = await marketplace.buy(listingId, 1n, to, { value });
+  return tx.wait();
+}
+
+// Optional helper to pass a custom per-token URI when enabled on-chain (Design A)
+export async function buyOneWithURI(listingId: bigint, priceMatic: string, customUri: string, recipient?: string) {
+  const { signer, marketplace } = await getSignerAndContracts();
+  const to = recipient || await signer.getAddress();
+  const value = parseEther(priceMatic);
+  const tx = await marketplace.buyWithCustomURIs(listingId, 1n, to, [customUri], { value });
+  return tx.wait();
+}
+
+// Edition-safe on-chain URI construction
+export async function buyOneAutoURI(listingId: bigint, priceMatic: string, recipient?: string) {
+  const { signer, marketplace } = await getSignerAndContracts();
+  const to = recipient || await signer.getAddress();
+  const value = parseEther(priceMatic);
+  const tx = await marketplace.buyAutoURI(listingId, 1n, to, { value });
+  return tx.wait();
+}
+
+// Artist/admin helper to set baseURI for a listing
+export async function setListingBaseURI(listingId: bigint, baseURI: string) {
+  const { marketplace } = await getSignerAndContracts();
+  const tx = await marketplace.setListingBaseURI(listingId, baseURI);
   return tx.wait();
 }
 

@@ -197,7 +197,7 @@ const CreateNftPage: React.FC = () => {
     <div className="artist-container">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h2 className="artist-heading" style={{ marginBottom: 0 }}>Create Multi-Asset NFT</h2>
-        <Button onClick={handleMint} className="btn" disabled={minting}>{minting ? 'Minting…' : 'Mint'}</Button>
+        <Button onClick={handleMint} className="btn" disabled={minting}>{minting ? 'Submitting...' : 'Submit for listing'}</Button>
       </div>
 
       <div className="artist-three-col">
