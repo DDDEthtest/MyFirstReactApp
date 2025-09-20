@@ -68,16 +68,17 @@ const ExplorePage: React.FC = () => {
       try {
         setErr(null);
         const col = collection(db, 'NFT-listings');
-        const activeMarketplace = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
+        const activeMarketplace = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '').toLowerCase();
         const activeChainId = Number(process.env.REACT_APP_CHAIN_ID || '137');
-        // Filter to the current marketplace + chain to avoid showing stale listings
-        const q = query(
-          col,
-          where('status', '==', 'listed'),
-          where('marketplace', '==', activeMarketplace),
-          where('chainId', '==', activeChainId)
-        );
-        const snap = await getDocs(q);
+        // Build filters defensively. Some older documents may not have marketplace/chainId.
+        const clauses: any[] = [where('status', '==', 'listed')];
+        if (activeMarketplace) clauses.push(where('marketplace', '==', activeMarketplace));
+        if (Number.isFinite(activeChainId) && activeChainId > 0) clauses.push(where('chainId', '==', activeChainId));
+        let snap = await getDocs(query(col, ...clauses));
+        // Fallback: if nothing found, try without marketplace/chain filters
+        if (snap.empty && clauses.length > 1) {
+          snap = await getDocs(query(col, where('status', '==', 'listed')));
+        }
         const list: ListedDoc[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
         if (!cancel) setItems(list);
         // hydrate metadata, assets and totalSold
