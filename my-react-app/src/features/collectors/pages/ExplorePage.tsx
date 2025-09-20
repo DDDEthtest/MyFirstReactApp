@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
 import { buyOneAutoURI, getListingTotalSold } from '../services/marketplaceClient';
 import { useWallet } from '../../../shared/hooks/useWallet';
@@ -30,7 +30,7 @@ function ipfsToHttp(uri?: string) {
 }
 
 const ExplorePage: React.FC = () => {
-  const { connected, connect } = useWallet();
+  const { connected, connect, address } = useWallet();
   const [items, setItems] = useState<ListedDoc[]>([]);
   const [meta, setMeta] = useState<Record<string, TokenMeta>>({});
   const [buying, setBuying] = useState<Record<string, boolean>>({});
@@ -39,8 +39,30 @@ const ExplorePage: React.FC = () => {
   const [assets, setAssets] = useState<Record<string, { image_name: string; image_path: string; enabled: boolean }[]>>({});
   const [previewFor, setPreviewFor] = useState<string | null>(null);
   const [previewLayers, setPreviewLayers] = useState<{ image_name: string; image_path: string; enabled: boolean }[]>([]);
+  const [authorized, setAuthorized] = useState(false);
+
+  // Check if connected wallet exists as a document in `artists` collection.
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      setAuthorized(false);
+      try {
+        const addr = address?.toLowerCase();
+        if (!addr) { return; }
+        const ref = doc(db, 'artists', addr);
+        const snap = await getDoc(ref);
+        if (!cancel) {
+          setAuthorized(snap.exists());
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancel = true; };
+  }, [address]);
 
   useEffect(() => {
+    if (!authorized) return; // Only load listings for authorized wallets
     let cancel = false;
     (async () => {
       try {
@@ -96,7 +118,7 @@ const ExplorePage: React.FC = () => {
       }
     })();
     return () => { cancel = true; };
-  }, []);
+  }, [authorized]);
 
   const onMint = async (it: ListedDoc) => {
     if (!connected) { await connect(); return; }
@@ -132,6 +154,9 @@ const ExplorePage: React.FC = () => {
   const togglePreviewLayer = (name: string) => {
     setPreviewLayers(prev => prev.map(l => l.image_name === name ? { ...l, enabled: !l.enabled } : l));
   };
+
+  // If not authorized (or not checked yet), don't render page content
+  if (!authorized) return null;
 
   return (
     <div>
