@@ -12,6 +12,7 @@ import { db } from '../../../shared/lib/firebase';
 import { useArtistProfile } from '../hooks/useArtistProfile';
 import { ROUTES } from '../../../shared/lib/constants';
 import { useNavigate } from 'react-router-dom';
+import StatusNote from '../config/StatusNote';
 
 const CreateNftPage: React.FC = () => {
   const { address } = useWallet();
@@ -246,6 +247,7 @@ const CreateNftPage: React.FC = () => {
           </div>
         </div>
         <div className="artist-col-status">
+          <StatusNote />
           <UploadStatus items={uploads} />
         </div>
       </div>

@@ -13,6 +13,8 @@
   /* Align base text color and font with collectors */
   color: #111827;
   font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif;
+  /* Shared sizing for asset title/upload rows */
+  --asset-row-h: 28px;
 }
 
 /* Ensure descendants inherit Roboto on artist pages */
@@ -37,7 +39,8 @@
 }
 .artist-form .input,
 .artist-form .textarea {
-  width: 100%;
+  width: 96%; /* leave a little breathing room on the right */
+  box-sizing: border-box;
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -77,7 +80,7 @@
 /* Multi-asset uploader */
 .asset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .asset-card {
@@ -88,23 +91,68 @@
   flex-direction: column;
 }
 .asset-header { display: none; }
-.asset-title { font-weight: 600; margin-bottom: 8px; }
+.asset-title {
+  font-weight: 600;
+  margin-bottom: 0;
+  min-height: var(--asset-row-h);
+  line-height: var(--asset-row-h);
+  display: flex;
+  align-items: center;
+}
 .asset-title .req { color: #dc2626; margin-left: 4px; }
 .filename { margin-left: 8px; font-size: 12px; color: #6b7280; }
 .thumb { width: 100%; height: 140px; border-radius: 6px; background: #fafafa; border: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: center; }
 .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
 .thumb.has-file img { border: 2px solid #16a34a; }
-.asset-card .upload { margin-top: 8px; }
+.asset-card .upload {
+  margin-top: 8px;
+  height: var(--asset-row-h);
+  min-height: var(--asset-row-h);
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.asset-card .upload .btn { padding: 4px 8px; font-size: 12px; line-height: 1; }
 .hint { margin-top: 8px; color: #6b7280; font-size: 14px; }
 
 /* Create page layout + live preview */
-.artist-layout, .artist-three-col { display: grid; grid-template-columns: 260px 440px 360px; gap: 24px; align-items: flex-start; }
-.artist-col-left { width: 260px; }
-.artist-col-right { width: 440px; }
-.artist-col-status { width: 360px; }
+/* Equal-width responsive three column grid */
+.artist-layout,
+.artist-three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch; /* make all columns equal height */
+}
+/* Prevent content from stretching grid tracks; keep equal widths even if empty */
+.artist-three-col > * { min-width: 0; }
+
+/* Columns should auto-size equally */
+.artist-col-left,
+.artist-col-right,
+.artist-col-status {
+  width: auto;
+}
+
+/* Panel styling and white backgrounds for all three columns */
+.artist-three-col > div,
+.artist-col-left,
+.artist-col-right,
+.artist-col-status {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  /* Ensure each column fills the grid row height even if empty */
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 .preview-canvas {
-  width: 440px; /* fixed sidebar width */
-  height: calc(440px * (1472 / 1104)); /* match background 1104w x 1472h ratio */
+  width: 100%;
+  aspect-ratio: 1104 / 1472; /* maintain background canonical ratio */
+  height: auto; /* computed from width via aspect-ratio */
   background: #f8fafc;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -133,11 +181,20 @@
 }
 
 /* Responsive adjustments */
+/* Responsive breakpoints: stack to two columns and then one */
 @media (max-width: 1280px) {
-  .artist-layout { grid-template-columns: 1fr; }
-  .artist-col-left, .artist-col-right, .artist-col-status { width: auto; }
-  .preview-canvas { width: 100%; height: calc(360px * (1472 / 1104)); }
+  .artist-layout,
+  .artist-three-col { grid-template-columns: repeat(2, 1fr); }
+  .preview-canvas { width: 100%; height: auto; }
   .left-scroll { height: auto; max-height: 60vh; }
+}
+
+@media (max-width: 640px) {
+  .artist-layout,
+  .artist-three-col { grid-template-columns: 1fr; }
+  /* On small screens keep inputs full width */
+  .artist-form .input,
+  .artist-form .textarea { width: 100%; }
 }
 
 /* Upload status panel */

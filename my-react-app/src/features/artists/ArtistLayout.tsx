@@ -14,8 +14,8 @@ const linkBase: React.CSSProperties = {
 
 const ArtistLayout: React.FC = () => {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
+    <div className="artists-root" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#7f7f7f' }}>
+      <header style={{ borderBottom: '1px solid #e5e7eb', background: '#7f7f7f' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <NavLink to={ROUTES.artists} end style={{ ...linkBase, fontWeight: 700, marginRight: 16 }}>Artist Portal</NavLink>

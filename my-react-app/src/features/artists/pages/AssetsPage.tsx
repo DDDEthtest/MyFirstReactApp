@@ -272,11 +272,21 @@ const AssetsPage: React.FC = () => {
         const res = await fetch(baseUrl);
         const baseJson: any = await res.json();
         const baseName = (baseJson?.name || it['artist-name'] || it.id || 'Untitled').toString();
+        const artistName = (() => {
+          const fromDoc = (it as any)['artist-name'];
+          if (fromDoc && String(fromDoc).trim()) return String(fromDoc).trim();
+          try {
+            const attrs = Array.isArray(baseJson?.attributes) ? baseJson.attributes : [];
+            const found = attrs.find((a: any) => (a?.trait_type || a?.traitType) === 'artist-name');
+            if (found?.value) return String(found.value).trim();
+          } catch {}
+          return 'Unknown Artist';
+        })();
         const files: { path: string; obj: unknown }[] = [];
         for (let i = 1; i <= maxSupply; i++) {
           const per = {
             ...baseJson,
-            name: `${baseName} #${i}`,
+            name: `${baseName} #${i} by ${artistName}`,
             attributes: [
               ...(Array.isArray(baseJson?.attributes) ? baseJson.attributes : []),
               { trait_type: 'Edition', value: i },
