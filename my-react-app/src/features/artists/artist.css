@@ -84,13 +84,17 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 8px;
+  display: flex;
+  flex-direction: column;
 }
-.asset-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.asset-header { display: none; }
 .asset-title { font-weight: 600; margin-bottom: 8px; }
 .asset-title .req { color: #dc2626; margin-left: 4px; }
 .filename { margin-left: 8px; font-size: 12px; color: #6b7280; }
-.thumb img { width: 100%; height: 140px; object-fit: contain; border-radius: 6px; background: #fafafa; border: 1px solid #f3f4f6; }
+.thumb { width: 100%; height: 140px; border-radius: 6px; background: #fafafa; border: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: center; }
+.thumb img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
 .thumb.has-file img { border: 2px solid #16a34a; }
+.asset-card .upload { margin-top: 8px; }
 .hint { margin-top: 8px; color: #6b7280; font-size: 14px; }
 
 /* Create page layout + live preview */
