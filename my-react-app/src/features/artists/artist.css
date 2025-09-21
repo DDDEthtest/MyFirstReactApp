@@ -1,13 +1,26 @@
 /* Artist Portal shared styles */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
+
+.artists-root,
+.artists-root * {
+  font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif !important;
+}
 
 .artist-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px 16px;
+  /* Align base text color and font with collectors */
+  color: #111827;
+  font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif;
 }
 
+/* Ensure descendants inherit Roboto on artist pages */
+.artist-container * { font-family: inherit; }
+
 .artist-heading {
-  font-size: 28px;
+  /* Match collectors .explore-title sizing */
+  font-size: 24px;
   font-weight: 700;
   margin: 0 0 16px 0;
 }
@@ -43,6 +56,7 @@
   cursor: pointer;
   background: #4f46e5;
   color: #fff;
+  line-height: 1;
 }
 .btn.secondary { background: #e5e7eb; color: #111827; }
 .btn:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -74,14 +88,14 @@
 .asset-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .asset-title { font-weight: 600; margin-bottom: 8px; }
 .asset-title .req { color: #dc2626; margin-left: 4px; }
-.filename { margin-left: 8px; font-size: 12px; color: #4b5563; }
+.filename { margin-left: 8px; font-size: 12px; color: #6b7280; }
 .thumb img { width: 100%; height: 140px; object-fit: contain; border-radius: 6px; background: #fafafa; border: 1px solid #f3f4f6; }
 .thumb.has-file img { border: 2px solid #16a34a; }
-.hint { margin-top: 8px; color: #374151; font-size: 14px; }
+.hint { margin-top: 8px; color: #6b7280; font-size: 14px; }
 
 /* Create page layout + live preview */
-.artist-layout, .artist-three-col { display: grid; grid-template-columns: 520px 440px 360px; gap: 24px; align-items: flex-start; }
-.artist-col-left { width: 520px; }
+.artist-layout, .artist-three-col { display: grid; grid-template-columns: 260px 440px 360px; gap: 24px; align-items: flex-start; }
+.artist-col-left { width: 260px; }
 .artist-col-right { width: 440px; }
 .artist-col-status { width: 360px; }
 .preview-canvas {
