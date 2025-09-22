@@ -68,11 +68,13 @@ const AssetsPage: React.FC = () => {
         const q = query(col, where('artist-wallet', '==', normalized));
         const snap = await getDocs(q);
         const got: Listing[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        // Drop any blocked submissions
+        const notBlocked = got.filter((it: any) => (it?.status || '').toLowerCase() !== 'blocked');
         // Show only relevant items for the currently configured marketplace/chain.
         // Keep any non-listed submissions visible so the artist can list them.
         const activeMarketplace = String(process.env.REACT_APP_MARKETPLACE_ADDRESS || '');
         const activeChainId = Number(process.env.REACT_APP_CHAIN_ID || '137');
-        const filtered = got.filter((it: any) => {
+        const filtered = notBlocked.filter((it: any) => {
           if (it?.status !== 'listed') return true; // keep drafts/approved
           return it?.marketplace === activeMarketplace && Number(it?.chainId) === activeChainId;
         });

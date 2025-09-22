@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../shared/lib/firebase';
-import { buyOneAutoURI, getListingTotalSold } from '../services/marketplaceClient';
+import { buyOneAutoURI, buyOneAutoURIUsingOnchainPrice, getListingTotalSold } from '../services/marketplaceClient';
 import { useWallet } from '../../../shared/hooks/useWallet';
 import MashupBuilder from '../../../collectors/MashupBuilder';
 
@@ -127,8 +127,8 @@ const ExplorePage: React.FC = () => {
       setBuying(b => ({ ...b, [it.id]: true }));
       const id = BigInt(it.listingId || '0');
       if (!id) throw new Error('Missing listingId');
-      const price = String(it.priceMatic || '0');
-      await buyOneAutoURI(id, price);
+      // Read price from chain to avoid Firestore/display drift
+      await buyOneAutoURIUsingOnchainPrice(id);
       alert('Minted 1 successfully');
 
       // optimistic refresh of totalSold

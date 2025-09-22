@@ -72,6 +72,16 @@ export async function buyOneAutoURI(listingId: bigint, priceMatic: string, recip
   return tx.wait();
 }
 
+// Safer variant: read price from chain to avoid Firestore drift
+export async function buyOneAutoURIUsingOnchainPrice(listingId: bigint, recipient?: string) {
+  const { signer, marketplace } = await getSignerAndContracts();
+  const to = recipient || await signer.getAddress();
+  const info = await marketplace.listings(listingId);
+  const value = info.price as bigint;
+  const tx = await marketplace.buyAutoURI(listingId, 1n, to, { value });
+  return tx.wait();
+}
+
 // Artist/admin helper to set baseURI for a listing
 export async function setListingBaseURI(listingId: bigint, baseURI: string) {
   const { marketplace } = await getSignerAndContracts();
